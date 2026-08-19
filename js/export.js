@@ -79,13 +79,11 @@
     const lineH = 24;
     const rowH = 22;
 
-    // Pre-measure required height using an off-screen probe canvas.
-    const probe = document.createElement("canvas").getContext("2d");
     function cardHeight(card) {
       let h = 20; // top padding
       h += lineH; // player name
       h += lineH + 6; // title row
-      h += 30; // points-won highlight
+      h += 44; // points-won highlight (percentage line + fraction line)
       const sections = [
         [I18N.t("serve"), 10],
         [I18N.t("returnLbl"), 5],
@@ -169,12 +167,14 @@
       ctx.font = "700 22px -apple-system, Segoe UI, Roboto, Arial";
       ctx.fillStyle = COLORS.accent;
       ctx.fillText(`${pct(s.pointsWonPct)} ${I18N.t("totalPointsWon")}`, M + pad, cy);
+      cy += 20;
       ctx.font = "13px -apple-system, Segoe UI, Roboto, Arial";
       ctx.fillStyle = COLORS.textMuted;
-      ctx.fillText(`(${s.pointsWon}/${s.pointsPlayed})`, M + pad + 200, cy);
-      cy += 26;
+      ctx.fillText(`(${s.pointsWon}/${s.pointsPlayed})`, M + pad, cy);
+      cy += 20;
 
       const rowsW = cardW - 2 * pad;
+      const statColW = 250; // keep label+value close together instead of spread across the full card
       const serveRows = [
         [I18N.t("firstServe"), `${pct(s.firstServeInPct)} (${s.firstServeInCount})`],
         [I18N.t("secondServe"), `${pct(s.secondServeInPct)} (${s.secondServeInCount})`],
@@ -211,7 +211,7 @@
         cy += 18;
         ctx.strokeStyle = COLORS.divider;
         ctx.beginPath(); ctx.moveTo(M + pad, cy - 12); ctx.lineTo(M + cardW - pad, cy - 12); ctx.stroke();
-        rows.forEach(([l, v]) => { statRow(l, v, M + pad, cy, rowsW); cy += rowH; });
+        rows.forEach(([l, v]) => { statRow(l, v, M + pad, cy, statColW); cy += rowH; });
         cy += 6;
       });
 
@@ -222,7 +222,7 @@
       cy += 18;
       ctx.strokeStyle = COLORS.divider;
       ctx.beginPath(); ctx.moveTo(M + pad, cy - 12); ctx.lineTo(M + cardW - pad, cy - 12); ctx.stroke();
-      const zCol1 = M + pad + rowsW - 150, zCol2 = M + pad + rowsW - 90, zCol3 = M + pad + rowsW - 30;
+      const zCol1 = M + pad + 160, zCol2 = M + pad + 200, zCol3 = M + pad + 240;
       ctx.font = "700 10px -apple-system, Segoe UI, Roboto, Arial";
       ctx.fillStyle = COLORS.textMuted;
       ctx.textAlign = "center";

@@ -138,16 +138,17 @@ body {
 .step-title-sm { font-size: 0.66rem; color: var(--text-muted); margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.04em; }
 .checkbox-line { display: flex; align-items: center; gap: 6px; font-size: 0.95rem; }
 
-/* Rally tap counter: a wide always-reachable button for counting shots live as the point happens */
+/* Rally tap counter: a wide, thumb-friendly button for counting shots live as the point happens */
 .rally-tap-row { display: flex; gap: 6px; margin-bottom: 6px; }
 .btn-tap {
-  flex: 1; background: var(--green); color: white; font-weight: 700; font-size: 0.95rem;
-  padding: 12px; border-radius: 10px;
+  flex: 1; background: var(--green); color: white; font-weight: 800; font-size: 1.15rem;
+  padding: 18px 12px; border-radius: 12px; min-height: 58px;
 }
-.btn-tap.active { background: var(--green-dark); box-shadow: inset 0 0 0 2px var(--accent-1); }
+.btn-tap #rally-tap-count { font-size: 1.4rem; margin-left: 4px; }
+.btn-tap.active { background: var(--green-dark); box-shadow: inset 0 0 0 3px var(--accent-1); }
 .btn-tap-reset {
-  flex-shrink: 0; width: 44px; border: 1px solid var(--border); background: white;
-  border-radius: 10px; font-size: 1.1rem; color: var(--text-muted); cursor: pointer;
+  flex-shrink: 0; width: 52px; border: 1px solid var(--border); background: white;
+  border-radius: 12px; font-size: 1.3rem; color: var(--text-muted); cursor: pointer;
 }
 
 /* Last point confirmation strip */
@@ -162,15 +163,15 @@ body {
 .panel-head h3 { margin: 0; }
 .panel-head-actions { display: flex; gap: 6px; flex-shrink: 0; }
 
-/* Zone picker */
-.zone-svg { width: 100%; max-width: 140px; display: block; margin: 0 auto; }
+/* Zone picker - large target area, easy to tap accurately courtside */
+.zone-svg { width: 100%; max-width: 280px; display: block; margin: 0 auto; }
 .court-outline { fill: #eef0ee; stroke: var(--green-dark); stroke-width: 2; }
 .court-net { stroke: var(--green-dark); stroke-width: 3; }
 .court-mid { stroke: white; stroke-width: 1; stroke-dasharray: 4 3; opacity: 0.6; }
 .zone-label { fill: white; font-size: 18px; font-weight: 700; pointer-events: none; }
 
-/* Compact icon bottom bar for undo/log/stats/home */
-.live-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 6px; }
+/* Compact icon bottom bar for log/stats/home */
+.live-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-top: 6px; }
 .action-btn {
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
   background: transparent; border: 1px solid var(--border); border-radius: 8px;
@@ -179,6 +180,17 @@ body {
 .action-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 .action-icon { font-size: 1rem; line-height: 1; }
 .action-label { font-size: 0.62rem; color: var(--text-muted); }
+
+/* Slim top bar: Undo (always present) + Swap Server (only before the first point) */
+.live-top-actions { display: flex; gap: 6px; margin-bottom: 6px; }
+.action-btn-top {
+  display: flex; align-items: center; justify-content: center; gap: 5px;
+  background: white; border: 1px solid var(--border); border-radius: 8px;
+  padding: 7px 10px; font-size: 0.78rem; font-weight: 600; color: var(--text); cursor: pointer;
+}
+.action-btn-top:disabled { opacity: 0.4; cursor: not-allowed; }
+.action-btn-top:first-child { flex: 0 0 auto; }
+.action-btn-top:last-child:not(:first-child) { flex: 1; }
 
 /* Point log table */
 .table-scroll { overflow-x: auto; }

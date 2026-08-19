@@ -297,6 +297,10 @@
     draft = emptyDraft();
     draft.serve = btn.dataset.serve;
     if (draft.serve === "DF") { commitPoint(); return; }
+    // The serve itself is shot #1 of the rally, so the point can be finished
+    // (winner tapped) right away even if the coach never touches the tap counter.
+    draft.rallyTapCount = 1;
+    draft.rallyBucket = bucketForTapCount(draft.rallyTapCount).id;
     renderDraft();
   }));
 
@@ -307,7 +311,7 @@
 
   function renderRallyBucketButtons() {
     const wrap = $("#rally-bucket-buttons");
-    wrap.innerHTML = RALLY_BUCKETS.map(b => `<button type="button" class="btn btn-choice" data-rally="${b.id}">${b.label}</button>`).join("");
+    wrap.innerHTML = RALLY_BUCKETS.map(b => `<button type="button" class="btn btn-choice btn-choice-sm" data-rally="${b.id}">${b.label}</button>`).join("");
     wrap.querySelectorAll("[data-rally]").forEach(btn => btn.addEventListener("click", () => {
       draft.rallyBucket = btn.dataset.rally;
       draft.rallyTapCount = null; // manual pick overrides the live tap counter
@@ -375,7 +379,9 @@
       $("#rally-tap-btn").classList.toggle("active", !!draft.rallyTapCount);
     }
 
-    const showDetailAndWinner = showRally && !!draft.rallyBucket;
+    // Detail + Winner open together with the rally step (rally already defaults to
+    // 1 the moment a serve is picked) so a quick point can be finished immediately.
+    const showDetailAndWinner = showRally;
     $("#step-detail").classList.toggle("hidden", !showDetailAndWinner);
     $("#step-winner").classList.toggle("hidden", !showDetailAndWinner);
     if (showDetailAndWinner) {
