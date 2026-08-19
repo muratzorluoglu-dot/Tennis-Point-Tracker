@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<title>Tennis Point Tracker</title>
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="icons/icon-192.png" />
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+<meta name="theme-color" content="#145c2c" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Tennis Tracker" />
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<header class="app-header">
+  <h1 data-i18n="appTitle">🎾 Tennis Point Tracker</h1>
+  <div class="lang-switch" id="lang-switch">
+    <button type="button" class="lang-btn" data-lang="en">EN</button>
+    <button type="button" class="lang-btn" data-lang="tr">TR</button>
+  </div>
+</header>
+
+<main id="app">
+
+  <!-- HOME -->
+  <section id="view-home" class="view">
+    <button id="btn-new-match" class="btn btn-primary btn-large" data-i18n="newMatchBtn">+ New Match</button>
+    <h2 class="section-title" data-i18n="matchHistory">Match History</h2>
+    <div id="match-list" class="match-list"></div>
+  </section>
+
+  <!-- SETUP -->
+  <section id="view-setup" class="view hidden">
+    <h2 class="section-title" data-i18n="newMatch">New Match</h2>
+    <form id="form-setup" class="form">
+      <label><span data-i18n="tournamentName">Tournament Name</span> <input type="text" id="f-tournament" data-i18n-placeholder="optional" placeholder="(optional)"></label>
+      <label><span data-i18n="round">Round</span> <input type="text" id="f-round" data-i18n-placeholder="optional" placeholder="(optional)"></label>
+      <label><span data-i18n="club">Club</span> <input type="text" id="f-club" data-i18n-placeholder="optional" placeholder="(optional)"></label>
+      <label><span data-i18n="city">City</span> <input type="text" id="f-city" data-i18n-placeholder="optional" placeholder="(optional)"></label>
+      <label><span data-i18n="coach">Coach</span> <input type="text" id="f-coach" data-i18n-placeholder="optional" placeholder="(optional)"></label>
+      <hr>
+      <label><span data-i18n="player1">Player 1</span> <input type="text" id="f-player1" data-i18n-placeholder="player1Name" placeholder="Player 1 name" required></label>
+      <label><span data-i18n="player2">Player 2</span> <input type="text" id="f-player2" data-i18n-placeholder="player2Name" placeholder="Player 2 name" required></label>
+      <div class="field-label" data-i18n="trackStatsFor">Track Stats For</div>
+      <div class="btn-row">
+        <label class="checkbox-line"><input type="checkbox" id="f-track-p1" checked> <span id="f-track-p1-label">Player 1</span></label>
+        <label class="checkbox-line"><input type="checkbox" id="f-track-p2" checked> <span id="f-track-p2-label">Player 2</span></label>
+      </div>
+      <label><span data-i18n="matchFormat">Match Format</span>
+        <select id="f-set-format"></select>
+      </label>
+      <label class="checkbox-line">
+        <input type="checkbox" id="f-final-mtb"> <span data-i18n="playMatchTiebreak">Play a Match Tiebreak (10 points) instead of a full final set</span>
+      </label>
+      <label><span data-i18n="startingServer">Starting Server</span>
+        <select id="f-server"></select>
+      </label>
+      <div class="form-actions">
+        <button type="button" id="btn-cancel-setup" class="btn btn-ghost" data-i18n="cancel">Cancel</button>
+        <button type="submit" class="btn btn-primary" data-i18n="startMatch">Start Match</button>
+      </div>
+    </form>
+  </section>
+
+  <!-- LIVE SCORING -->
+  <section id="view-live" class="view hidden">
+    <div class="scoreboard" id="scoreboard"></div>
+    <button type="button" id="btn-swap-server" class="btn btn-ghost btn-sm hidden">🔄 <span data-i18n="swapServer">Swap Server</span></button>
+
+    <div class="point-entry card">
+      <div class="step" id="step-serve">
+        <div class="btn-row">
+          <button type="button" class="btn btn-choice" data-serve="S1" data-i18n="firstServe">1st Serve</button>
+          <button type="button" class="btn btn-choice" data-serve="S2" data-i18n="secondServe">2nd Serve</button>
+          <button type="button" class="btn btn-choice btn-warn" data-serve="DF" data-i18n="doubleFault">Double Fault</button>
+        </div>
+      </div>
+
+      <div class="step hidden" id="step-ace">
+        <button type="button" class="btn btn-choice btn-ace" data-ace-toggle><span data-i18n="ace">Ace</span> 🔥🎾</button>
+      </div>
+
+      <div class="step hidden" id="step-rally">
+        <div class="rally-tap-row">
+          <button type="button" id="rally-tap-btn" class="btn btn-tap">👆 <span data-i18n="tapPerShot">Tap per Shot</span> <span id="rally-tap-count">0</span></button>
+          <button type="button" id="rally-tap-reset" class="btn btn-tap-reset" data-i18n-title="reset" title="Reset">↺</button>
+        </div>
+        <div class="btn-row" id="rally-bucket-buttons"></div>
+      </div>
+
+      <div class="step hidden" id="step-detail">
+        <div class="btn-row">
+          <button type="button" class="btn btn-choice btn-choice-sm btn-good" data-outcome="winner" data-i18n="winner">Winner</button>
+          <button type="button" class="btn btn-choice btn-choice-sm btn-warn" data-outcome="forced_error" data-i18n="forcedErrShort">Forced Err.</button>
+          <button type="button" class="btn btn-choice btn-choice-sm btn-warn" data-outcome="unforced_error" data-i18n="unforcedErrShort">Unforced Err.</button>
+        </div>
+        <div class="btn-row">
+          <button type="button" class="btn btn-choice btn-choice-sm" data-shot="volley" data-i18n="volley">Volley</button>
+          <button type="button" class="btn btn-choice btn-choice-sm" data-shot="smash" data-i18n="smash">Smash</button>
+          <button type="button" class="btn btn-choice btn-choice-sm" data-shot="drop" data-i18n="drop">Drop</button>
+        </div>
+        <div id="zone-picker-inline"></div>
+      </div>
+
+      <div class="step hidden" id="step-winner">
+        <div class="step-title-sm" id="winner-step-title" data-i18n="pointWinner">Point Winner</div>
+        <div class="btn-row" id="point-winner-buttons"></div>
+      </div>
+    </div>
+
+    <div id="last-point-strip" class="last-point-strip hidden">
+      <div class="last-point-info">✓ <span id="last-point-score"></span> — <span id="last-point-winner"></span></div>
+    </div>
+
+    <div class="live-actions">
+      <button type="button" id="btn-undo" class="action-btn" disabled><span class="action-icon">↺</span><span class="action-label" data-i18n="undo">Undo</span></button>
+      <button type="button" id="btn-view-log" class="action-btn"><span class="action-icon">📋</span><span class="action-label" data-i18n="log">Log</span></button>
+      <button type="button" id="btn-view-summary" class="action-btn"><span class="action-icon">📊</span><span class="action-label" data-i18n="stats">Stats</span></button>
+      <button type="button" id="btn-exit-live" class="action-btn"><span class="action-icon">🏠</span><span class="action-label" data-i18n="home">Home</span></button>
+    </div>
+
+    <div id="point-log-wrap" class="card hidden">
+      <div class="panel-head">
+        <h3 data-i18n="pointLog">Point Log</h3>
+        <div class="panel-head-actions">
+          <button type="button" id="btn-log-pdf" class="btn btn-ghost btn-sm">🖨️ <span data-i18n="pdf">PDF</span></button>
+          <button type="button" id="btn-log-share" class="btn btn-ghost btn-sm">📤 <span data-i18n="share">Share</span></button>
+        </div>
+      </div>
+      <div class="table-scroll">
+        <table id="point-log-table">
+          <thead>
+            <tr>
+              <th>#</th><th data-i18n="colSet">Set</th><th data-i18n="colScore">Score</th><th data-i18n="colWonBy">Won By</th><th data-i18n="colOutcome">Outcome</th>
+              <th data-i18n="colShots">Shots</th><th data-i18n="colZone">Zone</th><th data-i18n="col1st">1st</th><th data-i18n="col2nd">2nd</th>
+              <th data-i18n="colAce">Ace</th><th data-i18n="colDf">DF</th><th data-i18n="colBp">BP</th><th data-i18n="colRally">Rally</th><th data-i18n="colGame">Game</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- SUMMARY -->
+  <section id="view-summary" class="view hidden">
+    <div class="panel-head">
+      <h2 class="section-title" style="margin:0;" data-i18n="matchStats">Match Stats</h2>
+      <div class="panel-head-actions">
+        <button type="button" id="btn-summary-pdf" class="btn btn-ghost btn-sm">🖨️ <span data-i18n="pdf">PDF</span></button>
+        <button type="button" id="btn-summary-share" class="btn btn-ghost btn-sm">📤 <span data-i18n="shareAll">Share All</span></button>
+      </div>
+    </div>
+    <div id="match-info-strip" class="match-info-strip hidden"></div>
+    <div id="summary-content"></div>
+    <div class="live-actions">
+      <button type="button" id="btn-summary-back" class="btn btn-ghost" data-i18n="back">Back</button>
+    </div>
+  </section>
+
+</main>
+
+<script src="js/i18n.js"></script>
+<script src="js/scoring.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/court.js"></script>
+<script src="js/export.js"></script>
+<script src="js/app.js"></script>
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("sw.js").catch(() => {});
+    });
+  }
+</script>
+</body>
+</html>
