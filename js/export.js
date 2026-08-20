@@ -146,6 +146,7 @@
       ctx.stroke();
 
       const pad = 18;
+      const statColW = 250; // keep label+value close together instead of spread across the full card
       let cy = y + pad + 10;
       ctx.font = "700 11px -apple-system, Segoe UI, Roboto, Arial";
       ctx.fillStyle = COLORS.accent2;
@@ -159,7 +160,7 @@
         ctx.font = "700 13px -apple-system, Segoe UI, Roboto, Arial";
         ctx.fillStyle = COLORS.accent;
         const sw = ctx.measureText(card.scoreLabel).width;
-        ctx.fillText(card.scoreLabel, M + cardW - pad - sw, cy);
+        ctx.fillText(card.scoreLabel, M + pad + statColW - sw, cy);
       }
       cy += 30;
 
@@ -173,8 +174,6 @@
       ctx.fillText(`(${s.pointsWon}/${s.pointsPlayed})`, M + pad, cy);
       cy += 20;
 
-      const rowsW = cardW - 2 * pad;
-      const statColW = 250; // keep label+value close together instead of spread across the full card
       const serveRows = [
         [I18N.t("firstServe"), `${pct(s.firstServeInPct)} (${s.firstServeInCount})`],
         [I18N.t("secondServe"), `${pct(s.secondServeInPct)} (${s.secondServeInCount})`],
