@@ -155,9 +155,11 @@
       <div class="panel-head-actions">
         <button type="button" id="btn-summary-pdf" class="btn btn-ghost btn-sm">🖨️ <span data-i18n="pdf">PDF</span></button>
         <button type="button" id="btn-summary-share" class="btn btn-ghost btn-sm">📤 <span data-i18n="shareAll">Share All</span></button>
+        <button type="button" id="btn-ai-review" class="btn btn-ghost btn-sm">🤖 <span data-i18n="aiReview">AI Review</span></button>
       </div>
     </div>
     <div id="match-info-strip" class="match-info-strip hidden"></div>
+    <div id="ai-review-wrap" class="hidden"></div>
     <div id="summary-content"></div>
     <div class="live-actions">
       <button type="button" id="btn-summary-back" class="btn btn-ghost" data-i18n="back">Back</button>
@@ -171,6 +173,7 @@
 <script src="js/storage.js"></script>
 <script src="js/court.js"></script>
 <script src="js/export.js"></script>
+<script src="js/ai-review.js"></script>
 <script src="js/app.js"></script>
 <script>
   if ("serviceWorker" in navigator) {

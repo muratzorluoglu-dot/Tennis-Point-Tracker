@@ -638,8 +638,47 @@
 
   let lastSummaryGroups = [];
 
+  // ---------- AI Review: on-device, rule-based coaching notes (no network call) ----------
+  function aiReviewSectionList(title, items) {
+    return `
+      <div class="ai-review-section">
+        <div class="ai-review-section-title">${title}</div>
+        <ul class="ai-review-list">${items.map((i) => `<li>${escapeHtml(i)}</li>`).join("")}</ul>
+      </div>`;
+  }
+
+  function aiReviewCard(playerName, review) {
+    const tr = (item) => t(item.key, item.vars);
+    return `
+      <div class="ai-review-card">
+        <div class="ai-review-card-player">${escapeHtml(playerName)}</div>
+        <p class="ai-review-summary">${escapeHtml(tr(review.summary))}</p>
+        ${aiReviewSectionList(`💪 ${t("aiStrengths")}`, review.strengths.map(tr))}
+        ${aiReviewSectionList(`🎯 ${t("aiWeaknesses")}`, review.weaknesses.map(tr))}
+        ${aiReviewSectionList(`🏋️ ${t("aiTrainingFocus")}`, review.trainingFocus.map(tr))}
+        ${aiReviewSectionList(`📋 ${t("aiNextMatchTips")}`, review.nextMatchTips.map(tr))}
+        ${review.notes.length ? `<p class="ai-review-note">${escapeHtml(review.notes.map(tr).join(" "))}</p>` : ""}
+      </div>`;
+  }
+
+  function renderAIReview() {
+    const wrap = $("#ai-review-wrap");
+    const matchGroup = lastSummaryGroups[lastSummaryGroups.length - 1];
+    if (!matchGroup) { wrap.innerHTML = ""; return; }
+    wrap.innerHTML = `
+      <div class="card ai-review-wrap-inner">
+        <div class="ai-review-head">
+          <h3>🤖 ${t("aiReview")}</h3>
+          <div class="ai-review-subtitle">${t("aiReviewSubtitle")}</div>
+        </div>
+        ${matchGroup.cards.map((c) => aiReviewCard(c.playerName, AICoach.generateReview(c.s, { playerName: c.playerName }))).join("")}
+      </div>`;
+  }
+
   function renderSummary() {
     lastSummaryGroups = buildSummaryGroups();
+    $("#ai-review-wrap").classList.add("hidden");
+    $("#ai-review-wrap").innerHTML = "";
     const m = state.match;
     $("#summary-content").innerHTML = lastSummaryGroups.map((g, i) => `
       <div class="summary-group">
@@ -748,6 +787,18 @@
     }
   });
   $("#btn-summary-pdf").addEventListener("click", () => TennisExport.printSection("printing-summary"));
+
+  $("#btn-ai-review").addEventListener("click", () => {
+    const wrap = $("#ai-review-wrap");
+    const willShow = wrap.classList.contains("hidden");
+    if (willShow) {
+      renderAIReview();
+      wrap.classList.remove("hidden");
+      wrap.scrollIntoView({ behavior: "smooth", block: "start" });
+    } else {
+      wrap.classList.add("hidden");
+    }
+  });
 
   $("#btn-log-share").addEventListener("click", async (e) => {
     const btn = e.currentTarget;

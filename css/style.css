@@ -160,9 +160,9 @@ body {
 }
 .last-point-info { font-weight: 600; }
 
-.panel-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.panel-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
 .panel-head h3 { margin: 0; }
-.panel-head-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.panel-head-actions { display: flex; gap: 6px; flex-wrap: wrap; }
 
 /* Zone picker - large target area, easy to tap accurately courtside */
 .zone-svg { width: 100%; max-width: 280px; display: block; margin: 0 auto; }
@@ -317,6 +317,29 @@ thead { background: #eef2ee; position: sticky; top: 0; }
 .zone-stat-ue { color: #ff6b6b; }
 .zone-stat-minor { text-align: center; font-size: 0.72rem; color: rgba(255,255,255,0.4); font-weight: 700; }
 
+/* AI Review: on-device, rule-based coaching notes shown on the match summary screen */
+#ai-review-wrap .ai-review-wrap-inner { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.12); }
+.ai-review-head { margin-bottom: 12px; }
+.ai-review-head h3 { margin: 0 0 2px; color: white; font-size: 1.1rem; }
+.ai-review-subtitle { font-size: 0.78rem; color: rgba(255,255,255,0.55); }
+
+.ai-review-card {
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 14px; padding: 14px; color: rgba(255,255,255,0.92); margin-top: 10px;
+}
+.ai-review-card:first-of-type { margin-top: 0; }
+.ai-review-card-player {
+  font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--accent-2); font-weight: 700; margin-bottom: 6px;
+}
+.ai-review-summary { margin: 0 0 12px; font-size: 0.9rem; line-height: 1.5; color: rgba(255,255,255,0.9); }
+.ai-review-section { margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.1); }
+.ai-review-section-title { font-size: 0.78rem; font-weight: 700; color: rgba(255,255,255,0.75); margin-bottom: 6px; }
+.ai-review-list { margin: 0; padding-left: 18px; }
+.ai-review-list li { font-size: 0.85rem; line-height: 1.5; color: rgba(255,255,255,0.85); margin-bottom: 5px; }
+.ai-review-list li:last-child { margin-bottom: 0; }
+.ai-review-note { margin: 12px 0 0; font-size: 0.72rem; font-style: italic; color: rgba(255,255,255,0.45); }
+
 /* Print / Save-as-PDF: show only the requested section, on a plain white page */
 @media print {
   @page { size: landscape; margin: 10mm; }
@@ -332,7 +355,8 @@ thead { background: #eef2ee; position: sticky; top: 0; }
     background: white !important; color: black !important; box-shadow: none;
   }
   body.printing-summary .panel-head-actions, body.printing-log .panel-head-actions,
-  body.printing-summary .live-actions, body.printing-summary .group-actions { display: none !important; }
+  body.printing-summary .live-actions, body.printing-summary .group-actions,
+  body.printing-summary #ai-review-wrap { display: none !important; }
   body.printing-log .table-scroll { overflow: visible !important; }
   body.printing-log table { font-size: 10px; }
 
