@@ -122,6 +122,7 @@ const I18N = (function () {
       durationH: "{h}h {m}m",
       durationM: "{m}m",
 
+      copied: "Copied!",
       aiReview: "AI Review",
       aiReviewSubtitle: "Automated coaching notes based on this match's stats",
       aiOverallTitle: "Overall Assessment",
@@ -299,6 +300,7 @@ const I18N = (function () {
       durationH: "{h}sa {m}dk",
       durationM: "{m}dk",
 
+      copied: "Kopyalandı!",
       aiReview: "AI Review",
       aiReviewSubtitle: "Bu maçın istatistiklerine dayalı otomatik koçluk notları",
       aiOverallTitle: "Genel Değerlendirme",

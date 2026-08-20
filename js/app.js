@@ -668,12 +668,56 @@
     wrap.innerHTML = `
       <div class="card ai-review-wrap-inner">
         <div class="ai-review-head">
-          <h3>🤖 ${t("aiReview")}</h3>
-          <div class="ai-review-subtitle">${t("aiReviewSubtitle")}</div>
+          <div>
+            <h3>🤖 ${t("aiReview")}</h3>
+            <div class="ai-review-subtitle">${t("aiReviewSubtitle")}</div>
+          </div>
+          <button type="button" id="btn-ai-review-share" class="btn btn-ghost btn-sm">📤 ${t("share")}</button>
         </div>
         ${matchGroup.cards.map((c) => aiReviewCard(c.playerName, AICoach.generateReview(c.s, { playerName: c.playerName }))).join("")}
       </div>`;
   }
+
+  // Plain-text version of the AI review, formatted with WhatsApp-style
+  // *bold*/emoji markup instead of HTML, so it can go through navigator.share
+  // (or a clipboard copy) as one self-contained message.
+  function aiReviewShareText(matchHeader, matchGroup) {
+    const lines = [`🎾 *${matchHeader.title}*`];
+    if (matchHeader.subtitle) lines.push(matchHeader.subtitle);
+    lines.push("", `🤖 *${t("aiReview")}*`);
+    matchGroup.cards.forEach((c, i) => {
+      const review = AICoach.generateReview(c.s, { playerName: c.playerName });
+      const tr = (item) => t(item.key, item.vars);
+      if (i > 0) lines.push("", "▬▬▬▬▬▬▬▬▬▬");
+      lines.push(
+        "", `👤 *${c.playerName}*`, tr(review.summary),
+        "", `💪 *${t("aiStrengths")}*`, ...review.strengths.map((it) => `• ${tr(it)}`),
+        "", `🎯 *${t("aiWeaknesses")}*`, ...review.weaknesses.map((it) => `• ${tr(it)}`),
+        "", `🏋️ *${t("aiTrainingFocus")}*`, ...review.trainingFocus.map((it) => `• ${tr(it)}`),
+        "", `📋 *${t("aiNextMatchTips")}*`, ...review.nextMatchTips.map((it) => `• ${tr(it)}`),
+      );
+      if (review.notes.length) lines.push("", `_${review.notes.map(tr).join(" ")}_`);
+    });
+    return lines.join("\n");
+  }
+
+  $("#ai-review-wrap").addEventListener("click", async (e) => {
+    const btn = e.target.closest("#btn-ai-review-share");
+    if (!btn) return;
+    const matchGroup = lastSummaryGroups[lastSummaryGroups.length - 1];
+    if (!matchGroup) return;
+    const text = aiReviewShareText(matchHeaderInfo(), matchGroup);
+    if (navigator.share) {
+      try { await navigator.share({ text, title: t("aiReview") }); return; }
+      catch (err) { if (err && err.name === "AbortError") return; }
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      const original = btn.innerHTML;
+      btn.innerHTML = `✅ ${t("copied")}`;
+      setTimeout(() => { btn.innerHTML = original; }, 1500);
+    } catch (err) { /* clipboard unavailable - nothing more we can do here */ }
+  });
 
   function renderSummary() {
     lastSummaryGroups = buildSummaryGroups();

@@ -61,6 +61,26 @@
     }
   }
 
+  // Greedy word-wrap: splits text into lines that each fit within maxWidth,
+  // using whatever font is currently set on ctx.
+  function wrapText(ctx, text, maxWidth) {
+    if (!text) return [];
+    const words = text.split(" ");
+    const lines = [];
+    let line = "";
+    words.forEach((word) => {
+      const test = line ? `${line} ${word}` : word;
+      if (line && ctx.measureText(test).width > maxWidth) {
+        lines.push(line);
+        line = word;
+      } else {
+        line = test;
+      }
+    });
+    if (line) lines.push(line);
+    return lines;
+  }
+
   function roundRect(ctx, x, y, w, h, r) {
     ctx.beginPath();
     ctx.moveTo(x + r, y);
@@ -73,9 +93,13 @@
 
   // ---------- Match stats -> image ----------
   function renderStatsCanvas(matchHeader, cards) {
-    const W = 760;
+    // Narrow enough that the label/value columns fill the card width (no
+    // leftover dead space) while still leaving room for the longest labels.
+    const W = 400;
     const M = 20; // outer margin
     const cardW = W - 2 * M;
+    const pad = 18;
+    const rowsW = cardW - 2 * pad; // usable width inside a card; values right-align to this
     const lineH = 24;
     const rowH = 22;
 
@@ -96,7 +120,21 @@
       return h;
     }
 
-    let totalH = 90 + M; // header
+    // Header title/subtitle can be long (player names, tournament/round/club/
+    // city/coach) so wrap them instead of letting them run off the canvas.
+    // Font metrics don't depend on canvas size, so measure with a throwaway
+    // context before the real canvas (and its final height) is created.
+    const measureCtx = document.createElement("canvas").getContext("2d");
+    const titleFont = "700 18px -apple-system, Segoe UI, Roboto, Arial";
+    const subtitleFont = "12px -apple-system, Segoe UI, Roboto, Arial";
+    measureCtx.font = titleFont;
+    const titleLines = wrapText(measureCtx, "🎾 " + matchHeader.title, W - 2 * M);
+    measureCtx.font = subtitleFont;
+    const subtitleLines = matchHeader.subtitle ? wrapText(measureCtx, matchHeader.subtitle, W - 2 * M) : [];
+    const titleLineH = 22, subtitleLineH = 16;
+    const headerH = M + titleLines.length * titleLineH + 6 + subtitleLines.length * subtitleLineH + 16;
+
+    let totalH = headerH;
     cards.forEach((c) => { totalH += cardHeight(c) + 16; });
     totalH += M;
 
@@ -112,13 +150,13 @@
 
     let y = M;
     ctx.fillStyle = COLORS.text;
-    ctx.font = "700 20px -apple-system, Segoe UI, Roboto, Arial";
-    ctx.fillText("🎾 " + matchHeader.title, M, y + 22);
-    y += 28;
+    ctx.font = titleFont;
+    titleLines.forEach((line) => { ctx.fillText(line, M, y + 15); y += titleLineH; });
+    y += 6;
     ctx.fillStyle = COLORS.textMuted;
-    ctx.font = "13px -apple-system, Segoe UI, Roboto, Arial";
-    ctx.fillText(matchHeader.subtitle, M, y + 14);
-    y += 40;
+    ctx.font = subtitleFont;
+    subtitleLines.forEach((line) => { ctx.fillText(line, M, y + 10); y += subtitleLineH; });
+    y += 16;
 
     function statRow(label, value, x, rowY, w) {
       ctx.font = "13px -apple-system, Segoe UI, Roboto, Arial";
@@ -145,8 +183,6 @@
       ctx.lineWidth = 1;
       ctx.stroke();
 
-      const pad = 18;
-      const statColW = 250; // keep label+value close together instead of spread across the full card
       let cy = y + pad + 10;
       ctx.font = "700 11px -apple-system, Segoe UI, Roboto, Arial";
       ctx.fillStyle = COLORS.accent2;
@@ -160,7 +196,7 @@
         ctx.font = "700 13px -apple-system, Segoe UI, Roboto, Arial";
         ctx.fillStyle = COLORS.accent;
         const sw = ctx.measureText(card.scoreLabel).width;
-        ctx.fillText(card.scoreLabel, M + pad + statColW - sw, cy);
+        ctx.fillText(card.scoreLabel, M + pad + rowsW - sw, cy);
       }
       cy += 30;
 
@@ -210,7 +246,7 @@
         cy += 18;
         ctx.strokeStyle = COLORS.divider;
         ctx.beginPath(); ctx.moveTo(M + pad, cy - 12); ctx.lineTo(M + cardW - pad, cy - 12); ctx.stroke();
-        rows.forEach(([l, v]) => { statRow(l, v, M + pad, cy, statColW); cy += rowH; });
+        rows.forEach(([l, v]) => { statRow(l, v, M + pad, cy, rowsW); cy += rowH; });
         cy += 6;
       });
 
@@ -221,7 +257,7 @@
       cy += 18;
       ctx.strokeStyle = COLORS.divider;
       ctx.beginPath(); ctx.moveTo(M + pad, cy - 12); ctx.lineTo(M + cardW - pad, cy - 12); ctx.stroke();
-      const zCol1 = M + pad + 160, zCol2 = M + pad + 200, zCol3 = M + pad + 240;
+      const zCol3 = M + pad + rowsW - 16, zCol2 = zCol3 - 42, zCol1 = zCol2 - 42;
       ctx.font = "700 10px -apple-system, Segoe UI, Roboto, Arial";
       ctx.fillStyle = COLORS.textMuted;
       ctx.textAlign = "center";
@@ -349,6 +385,6 @@
   }
 
   window.TennisExport = {
-    shareOrDownloadCanvas, renderStatsCanvas, renderLogCanvas, printSection,
+    shareOrDownloadCanvas, shareOrDownloadMultiple, renderStatsCanvas, renderLogCanvas, printSection,
   };
 })();

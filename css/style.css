@@ -319,9 +319,10 @@ thead { background: #eef2ee; position: sticky; top: 0; }
 
 /* AI Review: on-device, rule-based coaching notes shown on the match summary screen */
 #ai-review-wrap .ai-review-wrap-inner { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.12); }
-.ai-review-head { margin-bottom: 12px; }
+.ai-review-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
 .ai-review-head h3 { margin: 0 0 2px; color: white; font-size: 1.1rem; }
 .ai-review-subtitle { font-size: 0.78rem; color: rgba(255,255,255,0.55); }
+.ai-review-head .btn-ghost { color: white; border-color: rgba(255,255,255,0.25); flex-shrink: 0; white-space: nowrap; }
 
 .ai-review-card {
   background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
