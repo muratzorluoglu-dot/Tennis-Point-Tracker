@@ -181,7 +181,7 @@ class TennisMatch {
    *   rallyValue: number,    // representative number used for averaging
    *   pointWinner: 1 | 2,    // who won the point (required unless ace/DF)
    *   outcome: 'winner' | 'forced_error' | 'unforced_error' | null,  // optional detail
-   *   shots: string[],       // subset of 'volley' | 'smash' | 'drop', optional
+   *   shots: string[],       // subset of 'volley' | 'smash' | 'drop' | 'slice', optional
    *   zone: 1-5 | null,      // optional
    * }
    */
@@ -408,7 +408,7 @@ function computeStats(sets, pointLog, player, setNo /* null = whole match */) {
   s.netPointsPlayed = netActionRows.length;
   s.netPointsWonPct = netActionRows.length ? (netActionRows.filter(p => p.pointWinner === player).length / netActionRows.length) * 100 : 0;
 
-  s.shotsPlayed = { volley: 0, smash: 0, drop: 0 };
+  s.shotsPlayed = { volley: 0, smash: 0, drop: 0, slice: 0 };
   rows.forEach(p => {
     const isThisPlayersAction = p.winnerPlayer === player || p.errorPlayer === player;
     if (isThisPlayersAction) (p.shots || []).forEach(shot => { if (s.shotsPlayed[shot] !== undefined) s.shotsPlayed[shot]++; });

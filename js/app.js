@@ -456,7 +456,7 @@
     }
   });
 
-  const shotLabel = () => ({ volley: t("volley"), smash: t("smash"), drop: t("dropShot") });
+  const shotLabel = () => ({ volley: t("volley"), smash: t("smash"), drop: t("dropShot"), slice: t("slice") });
   const outcomeLabel = () => ({ winner: t("winner"), forced_error: t("forcedError"), unforced_error: t("unforcedError") });
 
   function pointLogHeaderRowHTML() {
@@ -584,7 +584,13 @@
             <div class="mini-stat"><span class="mini-stat-num">${ratio(s.winnerToUERatio)}</span><span class="mini-stat-label">${t("winnerUeRatio")}</span></div>
           </div>
           <div class="stat-row" style="margin-top:8px;"><span>${t("netPointsWon")}</span><span>${s.netPointsPlayed ? pct(s.netPointsWonPct) : "-"} (${s.netPointsPlayed} ${t("pts")})</span></div>
-          <div class="stat-row"><span>${t("shotsPlayed")}</span><span>${t("volley")} ${s.shotsPlayed.volley} · ${t("smash")} ${s.shotsPlayed.smash} · ${t("drop")} ${s.shotsPlayed.drop}</span></div>
+          <div class="stat-row stat-row-multiline">
+            <span>${t("shotsPlayed")}</span>
+            <span class="value-lines">
+              <span>${t("volley")} ${s.shotsPlayed.volley} · ${t("smash")} ${s.shotsPlayed.smash}</span>
+              <span>${t("drop")} ${s.shotsPlayed.drop} · ${t("slice")} ${s.shotsPlayed.slice}</span>
+            </span>
+          </div>
         </div>
 
         <div class="summary-section">

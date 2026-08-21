@@ -111,7 +111,7 @@
       const sections = [
         [I18N.t("serve"), 10],
         [I18N.t("returnLbl"), 5],
-        [I18N.t("shotEfficiency"), card.s.shotsPlayed ? 6 : 5],
+        [I18N.t("shotEfficiency"), card.s.shotsPlayed ? 7 : 5],
         [I18N.t("rallyAnalysis"), 1 + card.s.rallyBreakdown.length],
         [I18N.t("byCourtZone"), 1 + card.s.zoneStats.length],
       ];
@@ -235,7 +235,8 @@
         [I18N.t("forcedErrors"), String(s.forcedErrorsCount)],
         [I18N.t("winnerUeRatio"), ratio(s.winnerToUERatio)],
         [I18N.t("netPointsWon"), s.netPointsPlayed ? `${pct(s.netPointsWonPct)} (${s.netPointsPlayed} ${I18N.t("pts")})` : "-"],
-        [I18N.t("shotsPlayed"), `${I18N.t("volley")} ${s.shotsPlayed.volley} · ${I18N.t("smash")} ${s.shotsPlayed.smash} · ${I18N.t("drop")} ${s.shotsPlayed.drop}`],
+        [I18N.t("shotsPlayed"), `${I18N.t("volley")} ${s.shotsPlayed.volley} · ${I18N.t("smash")} ${s.shotsPlayed.smash}`],
+        ["", `${I18N.t("drop")} ${s.shotsPlayed.drop} · ${I18N.t("slice")} ${s.shotsPlayed.slice}`],
       ];
       const rallyRows = s.rallyBreakdown.map((b) => [`${b.id} ${I18N.t("colShots")}`, b.played ? `${pct(b.wonPct)} (${b.won}/${b.played})` : "-"]);
       rallyRows.unshift([I18N.t("rallyAnalysis"), I18N.t("avgShots", { n: s.avgRallyLength.toFixed(1) })]);
@@ -315,7 +316,7 @@
     const headerH = 90;
     const totalH = headerH + rowH * (pointLog.length + 1) + 20;
 
-    const shotLabel = { volley: I18N.t("volley"), smash: I18N.t("smash"), drop: I18N.t("dropShot") };
+    const shotLabel = { volley: I18N.t("volley"), smash: I18N.t("smash"), drop: I18N.t("dropShot"), slice: I18N.t("slice") };
     const outcomeLabel = { winner: I18N.t("winner"), forced_error: I18N.t("forcedErrShort"), unforced_error: I18N.t("unforcedErrShort") };
 
     const canvas = document.createElement("canvas");
