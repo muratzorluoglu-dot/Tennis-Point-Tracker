@@ -87,13 +87,35 @@ body {
 
 .form { display: flex; flex-direction: column; gap: 10px; }
 .form label { display: flex; flex-direction: column; gap: 4px; font-size: 0.85rem; color: var(--text-muted); }
-.form input, .form select {
+.form input, .form select, .form textarea {
   padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 1rem; color: var(--text);
+  font-family: inherit; resize: vertical;
 }
+.quickadd-row { display: flex; gap: 6px; margin: -4px 0 2px; }
+.quickadd-row input { flex: 1; padding: 9px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.95rem; }
 .form-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
 .form label.checkbox-line { flex-direction: row; gap: 8px; font-size: 0.95rem; color: var(--text); }
 .form .field-label { font-size: 0.85rem; color: var(--text-muted); margin-bottom: -4px; }
 .optional-tag { font-weight: 400; font-size: 0.75rem; color: var(--text-muted); text-transform: none; }
+
+/* Home screen menu */
+.home-menu { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 8px; }
+.home-menu-item {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px;
+  padding: 18px 10px; cursor: pointer; color: var(--text); text-align: center;
+}
+.home-menu-item:hover { border-color: var(--green); }
+.home-menu-item:first-child { grid-column: 1 / -1; flex-direction: row; padding: 12px; }
+.home-menu-item .hmi-icon { font-size: 1.6rem; line-height: 1; }
+.home-menu-item:first-child .hmi-icon { font-size: 1.2rem; }
+.home-menu-item .hmi-label { font-size: 0.85rem; font-weight: 600; }
+
+.single-action { margin-top: 12px; }
+
+.about-content h3 { margin: 14px 0 4px; font-size: 0.95rem; color: var(--green-dark); }
+.about-content h3:first-child { margin-top: 0; }
+.about-content p { margin: 0 0 8px; font-size: 0.9rem; line-height: 1.5; color: var(--text); }
 
 .match-list { display: flex; flex-direction: column; gap: 8px; }
 .match-item {
@@ -199,16 +221,19 @@ table { border-collapse: collapse; width: 100%; font-size: 0.78rem; }
 th, td { border: 1px solid var(--border); padding: 4px 6px; text-align: center; white-space: nowrap; }
 thead { background: #eef2ee; position: sticky; top: 0; }
 
-/* Summary - şık koyu tema */
-#view-summary {
+/* Summary / Player Stats - şık koyu tema */
+#view-summary, #view-player-stats {
   background: linear-gradient(160deg, #0f2027 0%, #1c2b33 45%, #22343c 100%);
   border-radius: 16px;
   padding: 18px 14px 24px;
   margin: -8px -8px 0;
   min-height: calc(100vh - 40px);
 }
-#view-summary .section-title { color: rgba(255,255,255,0.6); }
-#view-summary .live-actions .btn-ghost { color: white; border-color: rgba(255,255,255,0.25); }
+#view-summary .section-title, #view-player-stats .section-title { color: rgba(255,255,255,0.6); }
+#view-summary .live-actions .btn-ghost, #view-player-stats .live-actions .btn-ghost { color: white; border-color: rgba(255,255,255,0.25); }
+#view-player-stats > label { display: flex; flex-direction: column; gap: 4px; font-size: 0.85rem; color: rgba(255,255,255,0.6); margin-bottom: 4px; }
+#view-player-stats > label select { padding: 10px; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; font-size: 1rem; background: rgba(255,255,255,0.06); color: white; }
+#view-player-stats .empty-hint { color: rgba(255,255,255,0.5); }
 
 /* Match "credits" strip: date/time/duration/tournament/round/club/city/coach - only filled-in fields show */
 .match-info-strip {
@@ -367,16 +392,19 @@ thead { background: #eef2ee; position: sticky; top: 0; }
   body.printing-summary *, body.printing-log * { visibility: hidden; }
 
   body.printing-summary #view-summary, body.printing-summary #view-summary *,
+  body.printing-summary #view-player-stats, body.printing-summary #view-player-stats *,
   body.printing-log #point-log-wrap, body.printing-log #point-log-wrap * {
     visibility: visible;
   }
-  body.printing-summary #view-summary, body.printing-log #point-log-wrap {
+  body.printing-summary #view-summary, body.printing-summary #view-player-stats, body.printing-log #point-log-wrap {
     position: absolute; top: 0; left: 0; width: 100%; margin: 0; min-height: 0;
     background: white !important; color: black !important; box-shadow: none;
   }
   body.printing-summary .panel-head-actions, body.printing-log .panel-head-actions,
   body.printing-summary .live-actions, body.printing-summary .group-actions,
-  body.printing-summary #ai-review-wrap { display: none !important; }
+  body.printing-summary .single-action,
+  body.printing-summary #ai-review-wrap, body.printing-summary #player-stats-ai-wrap,
+  body.printing-summary #view-player-stats > label { display: none !important; }
   body.printing-log .table-scroll { overflow: visible !important; }
   body.printing-log table { font-size: 10px; }
 

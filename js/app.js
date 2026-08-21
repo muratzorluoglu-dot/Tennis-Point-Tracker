@@ -35,6 +35,9 @@
 
   const views = {
     home: $("#view-home"),
+    about: $("#view-about"),
+    players: $("#view-players"),
+    playerStats: $("#view-player-stats"),
     setup: $("#view-setup"),
     live: $("#view-live"),
     summary: $("#view-summary"),
@@ -42,9 +45,10 @@
 
   const state = {
     matchId: null,
-    matchMeta: null,       // {tournament, round, club, city, coach, createdAt}
+    matchMeta: null,       // {tournament, round, club, surface, city, coach, createdAt, player1Id, player2Id}
     trackedPlayers: [1, 2],
     match: null,           // TennisMatch instance
+    trackingMode: "detailed", // "simple" | "detailed" - which live point-entry flow the current match uses
   };
 
   let draft = emptyDraft();
@@ -81,8 +85,19 @@
       case "home": renderHome(); break;
       case "live": renderLive(); break;
       case "summary": renderSummary(); break;
+      case "players": populatePlayerFieldSelects(); renderPlayersList(); break;
+      case "playerStats": renderPlayerStatsSelect(); break;
     }
   });
+
+  // ---------- NAVIGATION ----------
+  $$("[data-nav]").forEach((btn) => btn.addEventListener("click", () => {
+    const dest = btn.dataset.nav;
+    if (dest === "home") { showView("home"); renderHome(); }
+  }));
+  $("#btn-nav-about").addEventListener("click", () => showView("about"));
+  $("#btn-nav-players").addEventListener("click", () => { showView("players"); renderPlayersList(); resetPlayerForm(); });
+  $("#btn-nav-player-stats").addEventListener("click", () => { showView("playerStats"); renderPlayerStatsSelect(); });
 
   // ---------- HOME ----------
   function renderHome() {
@@ -139,8 +154,12 @@
 
   function hydrateMatch(rec) {
     state.matchId = rec.id;
-    state.matchMeta = { tournament: rec.tournament, round: rec.round, club: rec.club, surface: rec.surface, city: rec.city, coach: rec.coach, createdAt: rec.createdAt };
+    state.matchMeta = {
+      tournament: rec.tournament, round: rec.round, club: rec.club, surface: rec.surface, city: rec.city, coach: rec.coach,
+      createdAt: rec.createdAt, player1Id: rec.player1Id, player2Id: rec.player2Id,
+    };
     state.trackedPlayers = rec.trackedPlayers && rec.trackedPlayers.length ? rec.trackedPlayers : [1, 2];
+    state.trackingMode = rec.trackingMode || "detailed";
     const m = new TennisMatch({
       player1: rec.player1, player2: rec.player2,
       bestOf: rec.bestOf || DEFAULT_BEST_OF,
@@ -168,7 +187,10 @@
       coach: state.matchMeta.coach,
       player1: m.player1,
       player2: m.player2,
+      player1Id: state.matchMeta.player1Id,
+      player2Id: state.matchMeta.player2Id,
       trackedPlayers: state.trackedPlayers,
+      trackingMode: state.trackingMode,
       bestOf: m.bestOf,
       finished: m.isMatchOver(),
       match: {
@@ -197,9 +219,31 @@
   }
   populateSurfaceSelect();
 
+  // Player <select>s are populated from the roster (Players store), plus a
+  // trailing "+ Add New Player" option that reveals an inline quick-add row
+  // so a coach meeting a new opponent courtside doesn't have to leave setup.
+  function populatePlayerSelect(sel, selectedId) {
+    const players = Players.loadAll();
+    sel.innerHTML = `<option value="">${t("selectPlayerPlaceholder")}</option>` +
+      players.map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join("") +
+      `<option value="__new__">${t("addNewPlayerOption")}</option>`;
+    if (selectedId) sel.value = selectedId;
+  }
+  function refreshPlayerSelects() {
+    const v1 = $("#f-player1").value, v2 = $("#f-player2").value;
+    populatePlayerSelect($("#f-player1"), v1 !== "__new__" ? v1 : "");
+    populatePlayerSelect($("#f-player2"), v2 !== "__new__" ? v2 : "");
+  }
+
+  function selectedPlayerName(sel, fallback) {
+    const id = sel.value;
+    if (!id || id === "__new__") return fallback;
+    const p = Players.get(id);
+    return p ? p.name : fallback;
+  }
   function syncPlayerNameUI() {
-    const n1 = $("#f-player1").value.trim() || t("player1");
-    const n2 = $("#f-player2").value.trim() || t("player2");
+    const n1 = selectedPlayerName($("#f-player1"), t("player1"));
+    const n2 = selectedPlayerName($("#f-player2"), t("player2"));
     $("#f-track-p1-label").textContent = n1;
     $("#f-track-p2-label").textContent = n2;
     const serverSel = $("#f-server");
@@ -207,20 +251,55 @@
     serverSel.innerHTML = `<option value="1">${escapeHtml(n1)}</option><option value="2">${escapeHtml(n2)}</option>`;
     serverSel.value = prevValue;
   }
-  $("#f-player1").addEventListener("input", syncPlayerNameUI);
-  $("#f-player2").addEventListener("input", syncPlayerNameUI);
 
-  $("#btn-new-match").addEventListener("click", () => {
+  function wireQuickAdd(selectId, rowId, inputId, saveId) {
+    const sel = $(selectId), row = $(rowId), input = $(inputId), saveBtn = $(saveId);
+    sel.addEventListener("change", () => {
+      if (sel.value === "__new__") {
+        row.classList.remove("hidden");
+        input.value = "";
+        input.focus();
+      } else {
+        row.classList.add("hidden");
+        syncPlayerNameUI();
+      }
+    });
+    saveBtn.addEventListener("click", () => {
+      const name = input.value.trim();
+      if (!name) { input.focus(); return; }
+      const player = Players.findOrCreateByName(name);
+      refreshPlayerSelects();
+      sel.value = player.id;
+      row.classList.add("hidden");
+      syncPlayerNameUI();
+    });
+  }
+  wireQuickAdd("#f-player1", "#f-player1-quickadd", "#f-player1-newname", "#f-player1-quickadd-save");
+  wireQuickAdd("#f-player2", "#f-player2-quickadd", "#f-player2-newname", "#f-player2-quickadd-save");
+
+  function openSetup(mode) {
+    state.trackingMode = mode;
     $("#form-setup").reset();
+    refreshPlayerSelects();
+    $("#f-player1-quickadd").classList.add("hidden");
+    $("#f-player2-quickadd").classList.add("hidden");
     syncPlayerNameUI();
+    $("#setup-title").textContent = mode === "simple" ? t("navSimple") : t("navDetailed");
     showView("setup");
-  });
+  }
+  $("#btn-new-simple").addEventListener("click", () => openSetup("simple"));
+  $("#btn-new-detailed").addEventListener("click", () => openSetup("detailed"));
   $("#btn-cancel-setup").addEventListener("click", () => showView("home"));
 
   $("#form-setup").addEventListener("submit", (e) => {
     e.preventDefault();
-    const player1 = $("#f-player1").value.trim() || t("player1");
-    const player2 = $("#f-player2").value.trim() || t("player2");
+    const p1Id = $("#f-player1").value, p2Id = $("#f-player2").value;
+    if (!p1Id || p1Id === "__new__" || !p2Id || p2Id === "__new__") {
+      alert(t("pleaseSelectPlayers"));
+      return;
+    }
+    const player1 = Players.get(p1Id)?.name || t("player1");
+    const player2 = Players.get(p2Id)?.name || t("player2");
     const startingServer = parseInt($("#f-server").value, 10);
     const formatPreset = MATCH_FORMATS.find(f => f.id === $("#f-set-format").value) || MATCH_FORMATS[0];
     const finalSetMatchTiebreak = $("#f-final-mtb").checked;
@@ -238,6 +317,8 @@
       city: $("#f-city").value.trim(),
       coach: $("#f-coach").value.trim(),
       createdAt: new Date().toISOString(),
+      player1Id: p1Id,
+      player2Id: p2Id,
     };
     state.trackedPlayers = trackedPlayers.length ? trackedPlayers : [1, 2];
     state.match = new TennisMatch({
@@ -379,11 +460,14 @@
 
   function renderDraft() {
     $$("[data-serve]").forEach(b => b.classList.toggle("active", draft.serve === b.dataset.serve));
+    const simple = state.trackingMode === "simple";
 
     const showAce = draft.serve === "S1" || draft.serve === "S2";
     $("#step-ace").classList.toggle("hidden", !showAce);
 
-    const showRally = showAce && !draft.ace;
+    // Simple Tracking skips rally length entirely - the point can be closed
+    // out as soon as an outcome + winner is tagged, right after the serve.
+    const showRally = showAce && !draft.ace && !simple;
     $("#step-rally").classList.toggle("hidden", !showRally);
     if (showRally) {
       renderRallyBucketButtons();
@@ -392,18 +476,24 @@
       $("#rally-tap-btn").classList.toggle("active", !!draft.rallyTapCount);
     }
 
-    // Detail + Winner open together with the rally step (rally already defaults to
-    // 1 the moment a serve is picked) so a quick point can be finished immediately.
-    const showDetailAndWinner = showRally;
+    // Detail + Winner open together with the rally step in Detailed mode
+    // (rally already defaults to 1 the moment a serve is picked); in Simple
+    // mode they open directly off the serve/ace choice since there's no
+    // rally step to gate on.
+    const showDetailAndWinner = showAce && !draft.ace;
     $("#step-detail").classList.toggle("hidden", !showDetailAndWinner);
     $("#step-winner").classList.toggle("hidden", !showDetailAndWinner);
     if (showDetailAndWinner) {
       $$("#step-detail [data-outcome]").forEach(b => b.classList.toggle("active", draft.outcome === b.dataset.outcome));
-      $$("#step-detail [data-shot]").forEach(b => b.classList.toggle("active", draft.shots.includes(b.dataset.shot)));
-      renderZonePicker($("#zone-picker-inline"), {
-        selected: draft.zone,
-        onSelect: (z) => { draft.zone = draft.zone === z ? null : z; renderDraft(); },
-      });
+      $("#shot-type-row").classList.toggle("hidden", simple);
+      $("#zone-picker-inline").classList.toggle("hidden", simple);
+      if (!simple) {
+        $$("#step-detail [data-shot]").forEach(b => b.classList.toggle("active", draft.shots.includes(b.dataset.shot)));
+        renderZonePicker($("#zone-picker-inline"), {
+          selected: draft.zone,
+          onSelect: (z) => { draft.zone = draft.zone === z ? null : z; renderDraft(); },
+        });
+      }
       renderPointWinnerButtons();
     }
   }
@@ -542,7 +632,7 @@
       </div>`).join("");
   }
 
-  function summaryCard(playerName, title, scoreLabel, s) {
+  function summaryCard(playerName, title, scoreLabel, s, simple = false, trendLabelKey = "gameTrend") {
     return `
       <div class="summary-card">
         <div class="summary-card-head">
@@ -601,6 +691,7 @@
             <div class="mini-stat"><span class="mini-stat-num">${s.forcedErrorsCount}</span><span class="mini-stat-label">${t("forcedErrors")}</span></div>
             <div class="mini-stat"><span class="mini-stat-num">${ratio(s.winnerToUERatio)}</span><span class="mini-stat-label">${t("winnerUeRatio")}</span></div>
           </div>
+          ${simple ? "" : `
           <div class="stat-row" style="margin-top:8px;"><span>${t("netPointsWon")}</span><span>${s.netPointsPlayed ? pct(s.netPointsWonPct) : "-"} (${s.netPointsPlayed} ${t("pts")})</span></div>
           <div class="stat-row stat-row-multiline">
             <span>${t("shotsPlayed")}</span>
@@ -608,18 +699,19 @@
               <span>${t("volley")} ${s.shotsPlayed.volley} · ${t("smash")} ${s.shotsPlayed.smash}</span>
               <span>${t("drop")} ${s.shotsPlayed.drop} · ${t("slice")} ${s.shotsPlayed.slice}</span>
             </span>
-          </div>
+          </div>`}
           <div class="stat-row"><span>${t("streaks")}</span><span>${s.longestWinStreak}W / ${s.longestLossStreak}L</span></div>
           <div class="stat-row"><span>${t("ueOnPressure")}</span><span>${s.unforcedErrorsCount ? `${s.unforcedErrorsOnPressure}/${s.unforcedErrorsCount}` : "-"}</span></div>
         </div>
 
+        ${simple ? "" : `
         <div class="summary-section">
           <div class="summary-section-title">${t("rallyAnalysis")} <small>(${t("avgShots", { n: s.avgRallyLength.toFixed(1) })})</small></div>
           ${rallyBars(s.rallyBreakdown)}
         </div>
 
         <div class="summary-section">
-          <div class="summary-section-title">${t("gameTrend")}</div>
+          <div class="summary-section-title">${t(trendLabelKey)}</div>
           ${gameTrendBars(s.gameTrend)}
         </div>
 
@@ -638,7 +730,7 @@
             <span></span><span class="zh-win">W</span><span class="zh-ue">U.ERR</span><span class="zh-fe">F.ERR</span>
           </div>
           ${shotTypeStatsRows(s.shotTypeStats)}
-        </div>` : ""}
+        </div>` : ""}`}
       </div>`;
   }
 
@@ -794,7 +886,7 @@
             <button type="button" class="btn btn-ghost btn-sm" data-share-group="${i}">📤 ${t("share")}</button>
           </div>
         </div>
-        <div class="summary-grid">${g.cards.map(c => summaryCard(c.playerName, c.title, c.scoreLabel, c.s)).join("")}</div>
+        <div class="summary-grid">${g.cards.map(c => summaryCard(c.playerName, c.title, c.scoreLabel, c.s, state.trackingMode === "simple")).join("")}</div>
         <div class="group-log hidden card" id="group-log-${i}"></div>
       </div>`).join("");
     renderMatchInfoStrip();
@@ -860,7 +952,7 @@
       shareBtn.disabled = true;
       try {
         const slug = group.label.toLowerCase().replace(/\s+/g, "-");
-        const items = TennisExport.renderStatsCanvasParts(matchHeaderInfo(), group.cards)
+        const items = TennisExport.renderStatsCanvasParts(matchHeaderInfo(), group.cards, state.trackingMode === "simple")
           .map((p) => ({ canvas: p.canvas, filename: `${slug}-${p.suffix}.png` }));
         await TennisExport.shareOrDownloadMultiple(items, `${group.label} Stats`);
       } finally {
@@ -888,7 +980,7 @@
       const items = [];
       lastSummaryGroups.forEach((g) => {
         const slug = g.label.toLowerCase().replace(/\s+/g, "-");
-        TennisExport.renderStatsCanvasParts(header, g.cards).forEach((p) => {
+        TennisExport.renderStatsCanvasParts(header, g.cards, state.trackingMode === "simple").forEach((p) => {
           items.push({ canvas: p.canvas, filename: `${slug}-${p.suffix}.png` });
         });
       });
@@ -924,10 +1016,188 @@
   });
   $("#btn-log-pdf").addEventListener("click", () => TennisExport.printSection("printing-log"));
 
+  // ---------- PLAYERS (roster: coach's own players + opponents) ----------
+  const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+  const PLAYER_HANDS = ["right", "left"];
+  const PLAYER_GENDERS = ["male", "female"];
+
+  function populatePlayerFieldSelects() {
+    $("#f-player-hand").innerHTML = `<option value="">${t("optional")}</option>` +
+      PLAYER_HANDS.map(h => `<option value="${h}">${t("playerHand" + capitalize(h))}</option>`).join("");
+    $("#f-player-gender").innerHTML = `<option value="">${t("optional")}</option>` +
+      PLAYER_GENDERS.map(g => `<option value="${g}">${t("playerGender" + capitalize(g))}</option>`).join("");
+  }
+  populatePlayerFieldSelects();
+
+  function resetPlayerForm() {
+    $("#form-player").reset();
+    $("#f-player-id").value = "";
+    $("#btn-player-cancel-edit").classList.add("hidden");
+  }
+  $("#btn-player-cancel-edit").addEventListener("click", resetPlayerForm);
+
+  function startEditPlayer(id) {
+    const p = Players.get(id);
+    if (!p) return;
+    $("#f-player-id").value = p.id;
+    $("#f-player-name").value = p.name;
+    $("#f-player-club").value = p.club || "";
+    $("#f-player-age").value = p.age || "";
+    $("#f-player-hand").value = p.hand || "";
+    $("#f-player-gender").value = p.gender || "";
+    $("#f-player-notes").value = p.notes || "";
+    $("#btn-player-cancel-edit").classList.remove("hidden");
+  }
+
+  function renderPlayersList() {
+    const list = $("#player-list");
+    const players = Players.loadAll();
+    if (!players.length) { list.innerHTML = `<div class="empty-hint">${t("noPlayersYet")}</div>`; return; }
+    list.innerHTML = players.map(p => {
+      const metaParts = [p.club, p.age ? String(p.age) : null, p.hand ? t("playerHand" + capitalize(p.hand)) : null].filter(Boolean);
+      return `
+        <div class="match-item" data-id="${p.id}">
+          <div>
+            <div><strong>${escapeHtml(p.name)}</strong></div>
+            ${metaParts.length ? `<div class="meta">${metaParts.map(escapeHtml).join(" · ")}</div>` : ""}
+          </div>
+          <button class="btn btn-ghost btn-delete" data-del-player="${p.id}">${t("delete")}</button>
+        </div>`;
+    }).join("");
+    list.querySelectorAll(".match-item").forEach(el => {
+      el.addEventListener("click", (e) => {
+        if (e.target.closest(".btn-delete")) return;
+        startEditPlayer(el.dataset.id);
+      });
+    });
+    list.querySelectorAll(".btn-delete").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (confirm(t("deletePlayerConfirm"))) {
+          Players.remove(btn.dataset.delPlayer);
+          renderPlayersList();
+        }
+      });
+    });
+  }
+
+  $("#form-player").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const name = $("#f-player-name").value.trim();
+    if (!name) return;
+    const existingId = $("#f-player-id").value;
+    const existing = existingId ? Players.get(existingId) : null;
+    Players.upsert({
+      id: existingId || uid(),
+      name,
+      club: $("#f-player-club").value.trim(),
+      age: $("#f-player-age").value ? parseInt($("#f-player-age").value, 10) : null,
+      hand: $("#f-player-hand").value,
+      gender: $("#f-player-gender").value,
+      notes: $("#f-player-notes").value.trim(),
+      createdAt: existing ? existing.createdAt : new Date().toISOString(),
+    });
+    resetPlayerForm();
+    renderPlayersList();
+  });
+
+  // Older matches only stored free-text names - link them to a roster player
+  // (creating one if needed) so they count toward that player's aggregate stats.
+  function migratePlayerIds() {
+    const matches = Storage.loadAll();
+    let changed = false;
+    matches.forEach((rec) => {
+      if (!rec.player1Id) { const p = Players.findOrCreateByName(rec.player1); if (p) { rec.player1Id = p.id; changed = true; } }
+      if (!rec.player2Id) { const p = Players.findOrCreateByName(rec.player2); if (p) { rec.player2Id = p.id; changed = true; } }
+    });
+    if (changed) Storage.saveAll(matches);
+  }
+
+  // ---------- PLAYER STATISTICS (career/aggregate across all of a player's matches) ----------
+  let lastPlayerStatsData = null;
+
+  function computePlayerMatchEntries(playerId) {
+    return Storage.loadAll()
+      .filter(rec => rec.player1Id === playerId || rec.player2Id === playerId)
+      .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+      .map(rec => ({ sets: rec.match.sets, pointLog: rec.match.pointLog, player: rec.player1Id === playerId ? 1 : 2 }));
+  }
+
+  function renderPlayerStatsSelect() {
+    const sel = $("#f-player-stats-select");
+    const prevValue = sel.value;
+    const players = Players.loadAll();
+    sel.innerHTML = `<option value="">${t("selectPlayerPlaceholder")}</option>` +
+      players.map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join("");
+    sel.value = prevValue;
+    renderPlayerStatsContent(sel.value);
+  }
+  $("#f-player-stats-select").addEventListener("change", (e) => renderPlayerStatsContent(e.target.value));
+
+  function renderPlayerStatsContent(playerId) {
+    $("#player-stats-ai-wrap").classList.add("hidden");
+    $("#player-stats-ai-wrap").innerHTML = "";
+    const content = $("#player-stats-content");
+    const actions = $("#player-stats-actions");
+    if (!playerId) {
+      content.innerHTML = `<div class="empty-hint">${t("selectPlayerHint")}</div>`;
+      actions.classList.add("hidden");
+      lastPlayerStatsData = null;
+      return;
+    }
+    const player = Players.get(playerId);
+    const entries = computePlayerMatchEntries(playerId);
+    if (!entries.length) {
+      content.innerHTML = `<div class="empty-hint">${t("noMatchesForPlayer")}</div>`;
+      actions.classList.add("hidden");
+      lastPlayerStatsData = null;
+      return;
+    }
+    const agg = computeAggregateStats(entries);
+    agg.gameTrend = computeMatchTrend(entries); // per-match trend, not per-game (game numbers collide across matches)
+    const title = t("matchesCount", { n: entries.length });
+    const card = { playerName: player.name, title, scoreLabel: null, s: agg };
+    content.innerHTML = summaryCard(card.playerName, card.title, card.scoreLabel, card.s, false, "matchTrend");
+    actions.classList.remove("hidden");
+    lastPlayerStatsData = { header: { title: player.name, subtitle: title }, cards: [card] };
+  }
+
+  $("#btn-pstats-pdf").addEventListener("click", () => TennisExport.printSection("printing-summary"));
+
+  $("#btn-pstats-share").addEventListener("click", async (e) => {
+    const btn = e.currentTarget;
+    if (!lastPlayerStatsData) return;
+    btn.disabled = true;
+    try {
+      const { header, cards } = lastPlayerStatsData;
+      const items = TennisExport.renderStatsCanvasParts(header, cards, false, "matchTrend")
+        .map(p => ({ canvas: p.canvas, filename: `player-stats-${p.suffix}.png` }));
+      await TennisExport.shareOrDownloadMultiple(items, header.title);
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  $("#btn-pstats-ai-review").addEventListener("click", () => {
+    const wrap = $("#player-stats-ai-wrap");
+    if (!lastPlayerStatsData) return;
+    const willShow = wrap.classList.contains("hidden");
+    if (willShow) {
+      const { cards } = lastPlayerStatsData;
+      wrap.innerHTML = `<div class="card ai-review-wrap-inner">${cards.map(c => aiReviewCard(c.playerName, AICoach.generateReview(c.s, { playerName: c.playerName }))).join("")}</div>`;
+      wrap.classList.remove("hidden");
+      wrap.scrollIntoView({ behavior: "smooth", block: "start" });
+    } else {
+      wrap.classList.add("hidden");
+    }
+  });
+
   // ---------- init ----------
   I18N.applyStatic();
   populateSetFormatSelect();
+  populatePlayerFieldSelects();
   syncPlayerNameUI();
+  migratePlayerIds();
   showView("home");
   renderHome();
 })();

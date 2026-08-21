@@ -495,6 +495,69 @@ function computeStats(sets, pointLog, player, setNo /* null = whole match */) {
   return s;
 }
 
+// Flips every 1/2 player reference in a match's sets/pointLog. Used to
+// normalize a match so a given player is always "player 1" before pooling
+// several matches together for cross-match aggregate stats.
+function swapPlayersForStats(sets, pointLog) {
+  const flip = (p) => (p === 1 ? 2 : p === 2 ? 1 : p);
+  const swappedSets = sets.map((set) => ({
+    ...set,
+    p1Games: set.p2Games,
+    p2Games: set.p1Games,
+    winner: flip(set.winner),
+    games: set.games.map((g) => ({ ...g, server: flip(g.server), p1: g.p2, p2: g.p1, winner: flip(g.winner) })),
+  }));
+  const swappedLog = pointLog.map((p) => ({
+    ...p,
+    winnerPlayer: flip(p.winnerPlayer),
+    errorPlayer: flip(p.errorPlayer),
+    server: flip(p.server),
+    returner: flip(p.returner),
+    pointWinner: flip(p.pointWinner),
+    pointLoser: flip(p.pointLoser),
+    stakes: (p.stakes || []).map((st) => ({ ...st, player: flip(st.player) })),
+  }));
+  return { sets: swappedSets, pointLog: swappedLog };
+}
+
+/*
+ * Aggregates stats for one player across many matches.
+ * matchEntries: [{ sets, pointLog, player }] - player (1|2) is which slot
+ * this player occupied in that particular match.
+ *
+ * Rather than summing each match's already-computed percentages (which is
+ * statistically wrong once match sizes differ - a 100%-of-5 and a 40%-of-50
+ * do not average to 70%), every match is normalized so the target player is
+ * always "player 1", pooled into one combined sets/pointLog, and run through
+ * the normal computeStats() a single time - so every stat (including ones
+ * added later) stays correct with no separate aggregation logic to maintain.
+ *
+ * The pooled result's gameTrend is meaningless (set/game numbers collide
+ * across different matches) - callers should replace it with
+ * computeMatchTrend() for a cross-match view instead.
+ */
+function computeAggregateStats(matchEntries) {
+  let pooledSets = [];
+  let pooledPointLog = [];
+  let idx = 0;
+  matchEntries.forEach(({ sets, pointLog, player }) => {
+    const normalized = player === 1 ? { sets, pointLog } : swapPlayersForStats(sets, pointLog);
+    pooledSets = pooledSets.concat(normalized.sets);
+    pooledPointLog = pooledPointLog.concat(normalized.pointLog.map((p) => ({ ...p, idx: ++idx })));
+  });
+  return computeStats(pooledSets, pooledPointLog, 1, null);
+}
+
+// One entry per match (not per game) - the cross-match equivalent of a
+// single match's gameTrend, showing whether the player is trending up or
+// down across their recorded history.
+function computeMatchTrend(matchEntries) {
+  return matchEntries.map(({ sets, pointLog, player }) => {
+    const s = computeStats(sets, pointLog, player, null);
+    return { played: s.pointsPlayed, won: s.pointsWon, wonPct: s.pointsWonPct };
+  });
+}
+
 if (typeof module !== "undefined") {
-  module.exports = { TennisMatch, computeStats };
+  module.exports = { TennisMatch, computeStats, swapPlayersForStats, computeAggregateStats, computeMatchTrend };
 }

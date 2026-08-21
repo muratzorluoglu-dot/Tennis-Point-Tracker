@@ -98,12 +98,13 @@
   // shot type tables). Each part is a fully self-contained image (its own
   // header + player name), so any one of them reads fine shared on its own.
   const STATS_PARTS = [
-    { id: "overview", labelKey: "statsPartOverview", n: 1 },
-    { id: "shots", labelKey: "statsPartShots", n: 2 },
-    { id: "placement", labelKey: "statsPartPlacement", n: 3 },
+    { id: "overview", labelKey: "statsPartOverview" },
+    { id: "shots", labelKey: "statsPartShots" },
+    { id: "placement", labelKey: "statsPartPlacement" },
   ];
 
-  function renderStatsCanvas(matchHeader, cards, part) {
+  function renderStatsCanvas(matchHeader, cards, opts) {
+    const { part, simple = false, partIndex = 0, partTotal = 0, trendLabelKey = "gameTrend" } = opts;
     // Narrow enough that the label/value columns fill the card width (no
     // leftover dead space) while still leaving room for the longest labels.
     const W = 400;
@@ -124,9 +125,12 @@
         h += 22 + 10 * rowH + 10; // serve
         h += 22 + 5 * rowH + 10; // return
       } else if (part === "shots") {
-        h += 22 + (card.s.shotsPlayed ? 9 : 5) * rowH + 10; // shot efficiency
-        h += 22 + (1 + card.s.rallyBreakdown.length) * rowH + 10; // rally
-        if (card.s.gameTrend && card.s.gameTrend.length) h += 22 + 40 + 14; // game-by-game trend bars
+        const shotRowCount = simple ? 6 : (card.s.shotsPlayed ? 9 : 5);
+        h += 22 + shotRowCount * rowH + 10; // shot efficiency
+        if (!simple) {
+          h += 22 + (1 + card.s.rallyBreakdown.length) * rowH + 10; // rally
+          if (card.s.gameTrend && card.s.gameTrend.length) h += 22 + 40 + 14; // game-by-game trend bars
+        }
       } else if (part === "placement") {
         h += 22 + (1 + card.s.zoneStats.length) * rowH + 10; // by court zone
         if (card.s.shotTypeStats && card.s.shotTypeStats.length) h += 22 + (1 + card.s.shotTypeStats.length) * rowH + 10; // by shot type
@@ -148,7 +152,7 @@
     const subtitleLines = matchHeader.subtitle ? wrapText(measureCtx, matchHeader.subtitle, W - 2 * M) : [];
     const titleLineH = 22, subtitleLineH = 16;
     const partMeta = STATS_PARTS.find((p) => p.id === part);
-    const partBadgeH = partMeta ? 26 : 0;
+    const partBadgeH = partMeta && partTotal > 1 ? 26 : 0;
     const headerH = M + titleLines.length * titleLineH + 6 + subtitleLines.length * subtitleLineH + 16 + partBadgeH;
 
     let totalH = headerH;
@@ -175,9 +179,9 @@
     subtitleLines.forEach((line) => { ctx.fillText(line, M, y + 10); y += subtitleLineH; });
     y += 16;
 
-    if (partMeta) {
+    if (partMeta && partTotal > 1) {
       ctx.font = "700 11px -apple-system, Segoe UI, Roboto, Arial";
-      const badgeText = `${partMeta.n}/${STATS_PARTS.length} · ${I18N.t(partMeta.labelKey)}`;
+      const badgeText = `${partIndex}/${partTotal} · ${I18N.t(partMeta.labelKey)}`;
       const bw = ctx.measureText(badgeText).width + 20;
       roundRect(ctx, M, y - 15, bw, 22, 11);
       ctx.fillStyle = COLORS.card;
@@ -303,35 +307,46 @@
           [I18N.t("unforcedErrors"), String(s.unforcedErrorsCount)],
           [I18N.t("forcedErrors"), String(s.forcedErrorsCount)],
           [I18N.t("winnerUeRatio"), ratio(s.winnerToUERatio)],
-          [I18N.t("netPointsWon"), s.netPointsPlayed ? `${pct(s.netPointsWonPct)} (${s.netPointsPlayed} ${I18N.t("pts")})` : "-"],
-          [I18N.t("shotsPlayed"), `${I18N.t("volley")} ${s.shotsPlayed.volley} · ${I18N.t("smash")} ${s.shotsPlayed.smash}`],
-          ["", `${I18N.t("drop")} ${s.shotsPlayed.drop} · ${I18N.t("slice")} ${s.shotsPlayed.slice}`],
+        ];
+        if (!simple) {
+          shotRows.push(
+            [I18N.t("netPointsWon"), s.netPointsPlayed ? `${pct(s.netPointsWonPct)} (${s.netPointsPlayed} ${I18N.t("pts")})` : "-"],
+            [I18N.t("shotsPlayed"), `${I18N.t("volley")} ${s.shotsPlayed.volley} · ${I18N.t("smash")} ${s.shotsPlayed.smash}`],
+            ["", `${I18N.t("drop")} ${s.shotsPlayed.drop} · ${I18N.t("slice")} ${s.shotsPlayed.slice}`],
+          );
+        }
+        shotRows.push(
           [I18N.t("streaks"), `${s.longestWinStreak}W / ${s.longestLossStreak}L`],
           [I18N.t("ueOnPressure"), s.unforcedErrorsCount ? `${s.unforcedErrorsOnPressure}/${s.unforcedErrorsCount}` : "-"],
-        ];
-        const rallyRows = s.rallyBreakdown.map((b) => [`${b.id} ${I18N.t("colShots")}`, b.played ? `${pct(b.wonPct)} (${b.won}/${b.played})` : "-"]);
-        rallyRows.unshift([I18N.t("rallyAnalysis"), I18N.t("avgShots", { n: s.avgRallyLength.toFixed(1) })]);
-        statSections([[I18N.t("shotEfficiency"), shotRows], [I18N.t("rallyAnalysis"), rallyRows]]);
+        );
+        statSections([[I18N.t("shotEfficiency"), shotRows]]);
 
-        // GAME TREND - one bar per game, height = points-won % that game, so a
-        // coach can spot at a glance where the player pulled away or faded.
-        if (s.gameTrend && s.gameTrend.length) {
-          cy += 4;
-          sectionTitle(I18N.t("gameTrend"), M + pad, cy);
-          cy += 18;
-          ctx.strokeStyle = COLORS.divider;
-          ctx.beginPath(); ctx.moveTo(M + pad, cy - 12); ctx.lineTo(M + cardW - pad, cy - 12); ctx.stroke();
-          const barAreaH = 40, gap = 3;
-          const barW = Math.max(2, (rowsW - gap * (s.gameTrend.length - 1)) / s.gameTrend.length);
-          s.gameTrend.forEach((g, i) => {
-            const bh = Math.max(3, (g.wonPct / 100) * barAreaH);
-            const bx = M + pad + i * (barW + gap);
-            const by = cy + (barAreaH - bh);
-            ctx.fillStyle = g.wonPct >= 50 ? COLORS.good : COLORS.warn;
-            roundRect(ctx, bx, by, barW, bh, Math.min(2, barW / 2));
-            ctx.fill();
-          });
-          cy += barAreaH + 14;
+        if (!simple) {
+          const rallyRows = s.rallyBreakdown.map((b) => [`${b.id} ${I18N.t("colShots")}`, b.played ? `${pct(b.wonPct)} (${b.won}/${b.played})` : "-"]);
+          rallyRows.unshift([I18N.t("rallyAnalysis"), I18N.t("avgShots", { n: s.avgRallyLength.toFixed(1) })]);
+          statSections([[I18N.t("rallyAnalysis"), rallyRows]]);
+
+          // GAME/MATCH TREND - one bar per game (or per match, for a career
+          // view), height = points-won % that game, so a coach can spot at a
+          // glance where the player pulled away or faded.
+          if (s.gameTrend && s.gameTrend.length) {
+            cy += 4;
+            sectionTitle(I18N.t(trendLabelKey), M + pad, cy);
+            cy += 18;
+            ctx.strokeStyle = COLORS.divider;
+            ctx.beginPath(); ctx.moveTo(M + pad, cy - 12); ctx.lineTo(M + cardW - pad, cy - 12); ctx.stroke();
+            const barAreaH = 40, gap = 3;
+            const barW = Math.max(2, (rowsW - gap * (s.gameTrend.length - 1)) / s.gameTrend.length);
+            s.gameTrend.forEach((g, i) => {
+              const bh = Math.max(3, (g.wonPct / 100) * barAreaH);
+              const bx = M + pad + i * (barW + gap);
+              const by = cy + (barAreaH - bh);
+              ctx.fillStyle = g.wonPct >= 50 ? COLORS.good : COLORS.warn;
+              roundRect(ctx, bx, by, barW, bh, Math.min(2, barW / 2));
+              ctx.fill();
+            });
+            cy += barAreaH + 14;
+          }
         }
       }
 
@@ -415,10 +430,18 @@
     return canvas;
   }
 
-  // Renders all 3 parts for the same header/cards, ready to hand straight to
-  // shareOrDownloadMultiple.
-  function renderStatsCanvasParts(matchHeader, cards) {
-    return STATS_PARTS.map((p) => ({ suffix: p.id, canvas: renderStatsCanvas(matchHeader, cards, p.id) }));
+  // Renders all parts for the same header/cards, ready to hand straight to
+  // shareOrDownloadMultiple. Simple-tracking matches have no rally/zone/shot-
+  // type data, so they skip the "placement" part entirely (2 parts instead
+  // of 3) rather than sharing a near-empty image. trendLabelKey lets a
+  // cross-match "Player Stats" caller relabel the game-trend bars as a
+  // match-trend instead.
+  function renderStatsCanvasParts(matchHeader, cards, simple = false, trendLabelKey) {
+    const parts = simple ? STATS_PARTS.filter((p) => p.id !== "placement") : STATS_PARTS;
+    return parts.map((p, i) => ({
+      suffix: p.id,
+      canvas: renderStatsCanvas(matchHeader, cards, { part: p.id, simple, partIndex: i + 1, partTotal: parts.length, trendLabelKey }),
+    }));
   }
 
   // ---------- Point log -> image ----------
