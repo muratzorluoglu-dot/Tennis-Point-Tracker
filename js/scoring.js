@@ -401,16 +401,26 @@ function computeStats(sets, pointLog, player, setNo /* null = whole match */) {
   s.totalErrorsCount = s.forcedErrorsCount + s.unforcedErrorsCount;
   s.winnerToUERatio = s.unforcedErrorsCount ? (s.winnersCount / s.unforcedErrorsCount) : (s.winnersCount > 0 ? Infinity : 0);
 
+  // Who hit the tagged shot(s) for this point: the winner/error player when an
+  // outcome was tagged, otherwise fall back to the point winner - a coach can
+  // tag a shot type (volley/smash/drop/slice) without also tagging an outcome,
+  // and that shot shouldn't silently disappear from the shot stats.
+  const shotOwner = (p) => {
+    if (p.outcome === "winner") return p.winnerPlayer;
+    if (p.outcome === "forced_error" || p.outcome === "unforced_error") return p.errorPlayer;
+    return p.pointWinner;
+  };
+
   // net points (volley/drop) decided by this player: how often they won when playing them
   const netActionRows = rows.filter(p =>
-    (p.winnerPlayer === player || p.errorPlayer === player) &&
+    shotOwner(p) === player &&
     (p.shots || []).some(shot => shot === "volley" || shot === "drop"));
   s.netPointsPlayed = netActionRows.length;
   s.netPointsWonPct = netActionRows.length ? (netActionRows.filter(p => p.pointWinner === player).length / netActionRows.length) * 100 : 0;
 
   s.shotsPlayed = { volley: 0, smash: 0, drop: 0, slice: 0 };
   rows.forEach(p => {
-    const isThisPlayersAction = p.winnerPlayer === player || p.errorPlayer === player;
+    const isThisPlayersAction = shotOwner(p) === player;
     if (isThisPlayersAction) (p.shots || []).forEach(shot => { if (s.shotsPlayed[shot] !== undefined) s.shotsPlayed[shot]++; });
   });
 
