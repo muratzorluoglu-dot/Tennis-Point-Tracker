@@ -74,6 +74,7 @@
   $$(".lang-btn").forEach((btn) => btn.addEventListener("click", () => I18N.setLang(btn.dataset.lang)));
   I18N.onChange(() => {
     populateSetFormatSelect();
+    populateSurfaceSelect();
     syncPlayerNameUI();
     // re-render whichever screen is currently on view so dynamically-built HTML picks up the new language
     switch (currentViewName()) {
@@ -138,7 +139,7 @@
 
   function hydrateMatch(rec) {
     state.matchId = rec.id;
-    state.matchMeta = { tournament: rec.tournament, round: rec.round, club: rec.club, city: rec.city, coach: rec.coach, createdAt: rec.createdAt };
+    state.matchMeta = { tournament: rec.tournament, round: rec.round, club: rec.club, surface: rec.surface, city: rec.city, coach: rec.coach, createdAt: rec.createdAt };
     state.trackedPlayers = rec.trackedPlayers && rec.trackedPlayers.length ? rec.trackedPlayers : [1, 2];
     const m = new TennisMatch({
       player1: rec.player1, player2: rec.player2,
@@ -162,6 +163,7 @@
       tournament: state.matchMeta.tournament,
       round: state.matchMeta.round,
       club: state.matchMeta.club,
+      surface: state.matchMeta.surface,
       city: state.matchMeta.city,
       coach: state.matchMeta.coach,
       player1: m.player1,
@@ -184,6 +186,16 @@
     if (prevValue) sel.value = prevValue;
   }
   populateSetFormatSelect();
+
+  const SURFACES = ["hard", "clay", "grass"];
+  function populateSurfaceSelect() {
+    const sel = $("#f-surface");
+    const prevValue = sel.value;
+    sel.innerHTML = `<option value="">${t("optional")}</option>` +
+      SURFACES.map(id => `<option value="${id}">${t("surface_" + id)}</option>`).join("");
+    sel.value = prevValue;
+  }
+  populateSurfaceSelect();
 
   function syncPlayerNameUI() {
     const n1 = $("#f-player1").value.trim() || t("player1");
@@ -222,6 +234,7 @@
       tournament: $("#f-tournament").value.trim(),
       round: $("#f-round").value.trim(),
       club: $("#f-club").value.trim(),
+      surface: $("#f-surface").value,
       city: $("#f-city").value.trim(),
       coach: $("#f-coach").value.trim(),
       createdAt: new Date().toISOString(),
@@ -766,6 +779,7 @@
       [t("tournament"), meta.tournament],
       [t("round"), meta.round],
       [t("club"), meta.club],
+      [t("surface"), meta.surface ? t("surface_" + meta.surface) : null],
       [t("city"), meta.city],
       [t("coach"), meta.coach],
     ];
@@ -815,7 +829,7 @@
     const m = state.match;
     const meta = state.matchMeta || {};
     const start = m.matchStartTime ? new Date(m.matchStartTime) : new Date();
-    const parts = [meta.tournament, meta.round, meta.club, meta.city, meta.coach ? `${t("coach")}: ${meta.coach}` : null].filter(Boolean);
+    const parts = [meta.tournament, meta.round, meta.club, meta.surface ? t("surface_" + meta.surface) : null, meta.city, meta.coach ? `${t("coach")}: ${meta.coach}` : null].filter(Boolean);
     return {
       title: `${m.player1} ${t("vs")} ${m.player2}`,
       subtitle: [start.toLocaleDateString(), ...parts].join(" · "),
