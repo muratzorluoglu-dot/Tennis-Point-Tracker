@@ -859,8 +859,10 @@
       if (!group) return;
       shareBtn.disabled = true;
       try {
-        const canvas = TennisExport.renderStatsCanvas(matchHeaderInfo(), group.cards);
-        await TennisExport.shareOrDownloadCanvas(canvas, `${group.label.toLowerCase().replace(/\s+/g, "-")}-stats.png`, `${group.label} Stats`);
+        const slug = group.label.toLowerCase().replace(/\s+/g, "-");
+        const items = TennisExport.renderStatsCanvasParts(matchHeaderInfo(), group.cards)
+          .map((p) => ({ canvas: p.canvas, filename: `${slug}-${p.suffix}.png` }));
+        await TennisExport.shareOrDownloadMultiple(items, `${group.label} Stats`);
       } finally {
         shareBtn.disabled = false;
       }
@@ -883,10 +885,13 @@
     btn.disabled = true;
     try {
       const header = matchHeaderInfo();
-      const items = lastSummaryGroups.map((g) => ({
-        canvas: TennisExport.renderStatsCanvas(header, g.cards),
-        filename: `${g.label.toLowerCase().replace(/\s+/g, "-")}-stats.png`,
-      }));
+      const items = [];
+      lastSummaryGroups.forEach((g) => {
+        const slug = g.label.toLowerCase().replace(/\s+/g, "-");
+        TennisExport.renderStatsCanvasParts(header, g.cards).forEach((p) => {
+          items.push({ canvas: p.canvas, filename: `${slug}-${p.suffix}.png` });
+        });
+      });
       await TennisExport.shareOrDownloadMultiple(items, t("matchStats"));
     } finally {
       btn.disabled = false;

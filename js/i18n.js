@@ -124,6 +124,9 @@ const I18N = (function () {
       zoneN: "Zone {n}",
       pts: "pts",
       bigPointsWon: "Big Points Won",
+      statsPartOverview: "Overview",
+      statsPartShots: "Shot & Rally Analysis",
+      statsPartPlacement: "Court & Shot Placement",
 
       date: "Date",
       time: "Time",
@@ -312,6 +315,9 @@ const I18N = (function () {
       zoneN: "Bölge {n}",
       pts: "puan",
       bigPointsWon: "Kritik Sayılar",
+      statsPartOverview: "Genel Bakış",
+      statsPartShots: "Vuruş & Ralli Analizi",
+      statsPartPlacement: "Bölge & Vuruş Yerleşimi",
 
       date: "Tarih",
       time: "Saat",

@@ -92,7 +92,18 @@
   }
 
   // ---------- Match stats -> image ----------
-  function renderStatsCanvas(matchHeader, cards) {
+  // The full stat set is too tall for one comfortable share image, so it's
+  // split into 3 logical parts: overview (points won + serve/return), shot
+  // analysis (shot efficiency/rally/game trend), and placement (court zone +
+  // shot type tables). Each part is a fully self-contained image (its own
+  // header + player name), so any one of them reads fine shared on its own.
+  const STATS_PARTS = [
+    { id: "overview", labelKey: "statsPartOverview", n: 1 },
+    { id: "shots", labelKey: "statsPartShots", n: 2 },
+    { id: "placement", labelKey: "statsPartPlacement", n: 3 },
+  ];
+
+  function renderStatsCanvas(matchHeader, cards, part) {
     // Narrow enough that the label/value columns fill the card width (no
     // leftover dead space) while still leaving room for the longest labels.
     const W = 400;
@@ -107,18 +118,19 @@
       let h = 20; // top padding
       h += lineH; // player name
       h += lineH + 6; // title row
-      h += 44; // points-won highlight (percentage line + fraction line)
-      if (card.s.pressurePointsPlayed) h += 36; // big-points-won badge
-      const sections = [
-        [I18N.t("serve"), 10],
-        [I18N.t("returnLbl"), 5],
-        [I18N.t("shotEfficiency"), card.s.shotsPlayed ? 9 : 5],
-        [I18N.t("rallyAnalysis"), 1 + card.s.rallyBreakdown.length],
-        [I18N.t("byCourtZone"), 1 + card.s.zoneStats.length],
-      ];
-      sections.forEach(([, rows]) => { h += 22 + rows * rowH + 10; });
-      if (card.s.gameTrend && card.s.gameTrend.length) h += 22 + 40 + 14; // game-by-game trend bars
-      if (card.s.shotTypeStats && card.s.shotTypeStats.length) h += 22 + (1 + card.s.shotTypeStats.length) * rowH + 10; // by shot type
+      if (part === "overview") {
+        h += 44; // points-won highlight (percentage line + fraction line)
+        if (card.s.pressurePointsPlayed) h += 36; // big-points-won badge
+        h += 22 + 10 * rowH + 10; // serve
+        h += 22 + 5 * rowH + 10; // return
+      } else if (part === "shots") {
+        h += 22 + (card.s.shotsPlayed ? 9 : 5) * rowH + 10; // shot efficiency
+        h += 22 + (1 + card.s.rallyBreakdown.length) * rowH + 10; // rally
+        if (card.s.gameTrend && card.s.gameTrend.length) h += 22 + 40 + 14; // game-by-game trend bars
+      } else if (part === "placement") {
+        h += 22 + (1 + card.s.zoneStats.length) * rowH + 10; // by court zone
+        if (card.s.shotTypeStats && card.s.shotTypeStats.length) h += 22 + (1 + card.s.shotTypeStats.length) * rowH + 10; // by shot type
+      }
       h += 20; // bottom padding
       return h;
     }
@@ -135,7 +147,9 @@
     measureCtx.font = subtitleFont;
     const subtitleLines = matchHeader.subtitle ? wrapText(measureCtx, matchHeader.subtitle, W - 2 * M) : [];
     const titleLineH = 22, subtitleLineH = 16;
-    const headerH = M + titleLines.length * titleLineH + 6 + subtitleLines.length * subtitleLineH + 16;
+    const partMeta = STATS_PARTS.find((p) => p.id === part);
+    const partBadgeH = partMeta ? 26 : 0;
+    const headerH = M + titleLines.length * titleLineH + 6 + subtitleLines.length * subtitleLineH + 16 + partBadgeH;
 
     let totalH = headerH;
     cards.forEach((c) => { totalH += cardHeight(c) + 16; });
@@ -161,6 +175,21 @@
     subtitleLines.forEach((line) => { ctx.fillText(line, M, y + 10); y += subtitleLineH; });
     y += 16;
 
+    if (partMeta) {
+      ctx.font = "700 11px -apple-system, Segoe UI, Roboto, Arial";
+      const badgeText = `${partMeta.n}/${STATS_PARTS.length} · ${I18N.t(partMeta.labelKey)}`;
+      const bw = ctx.measureText(badgeText).width + 20;
+      roundRect(ctx, M, y - 15, bw, 22, 11);
+      ctx.fillStyle = COLORS.card;
+      ctx.fill();
+      ctx.strokeStyle = COLORS.accent2;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.fillStyle = COLORS.accent2;
+      ctx.fillText(badgeText, M + 10, y);
+      y += partBadgeH;
+    }
+
     function statRow(label, value, x, rowY, w) {
       ctx.font = "13px -apple-system, Segoe UI, Roboto, Arial";
       ctx.fillStyle = COLORS.textMuted;
@@ -177,6 +206,20 @@
       ctx.fillText(text.toLocaleUpperCase(I18N.getLang()), x, rowY);
     }
 
+    function statSections(sections) {
+      sections.forEach(([label, rows]) => {
+        cy += 4;
+        sectionTitle(label, M + pad, cy);
+        cy += 18;
+        ctx.strokeStyle = COLORS.divider;
+        ctx.beginPath(); ctx.moveTo(M + pad, cy - 12); ctx.lineTo(M + cardW - pad, cy - 12); ctx.stroke();
+        rows.forEach(([l, v]) => { statRow(l, v, M + pad, cy, rowsW); cy += rowH; });
+        cy += 6;
+      });
+    }
+
+    let cy = 0; // set per-card below; declared here so statSections() can close over it
+
     cards.forEach((card) => {
       const h = cardHeight(card);
       roundRect(ctx, M, y, cardW, h, 14);
@@ -186,7 +229,7 @@
       ctx.lineWidth = 1;
       ctx.stroke();
 
-      let cy = y + pad + 10;
+      cy = y + pad + 10;
       ctx.font = "700 11px -apple-system, Segoe UI, Roboto, Arial";
       ctx.fillStyle = COLORS.accent2;
       ctx.fillText(card.playerName.toUpperCase(), M + pad, cy);
@@ -204,140 +247,103 @@
       cy += 30;
 
       const s = card.s;
-      ctx.font = "700 22px -apple-system, Segoe UI, Roboto, Arial";
-      ctx.fillStyle = COLORS.accent;
-      ctx.fillText(`${pct(s.pointsWonPct)} ${I18N.t("totalPointsWon")}`, M + pad, cy);
-      cy += 20;
-      ctx.font = "13px -apple-system, Segoe UI, Roboto, Arial";
-      ctx.fillStyle = COLORS.textMuted;
-      ctx.fillText(`(${s.pointsWon}/${s.pointsPlayed})`, M + pad, cy);
-      cy += 20;
 
-      if (s.pressurePointsPlayed) {
-        roundRect(ctx, M + pad, cy - 14, rowsW, 26, 8);
-        ctx.fillStyle = "rgba(255, 212, 59, 0.12)";
-        ctx.fill();
-        ctx.strokeStyle = "rgba(255, 212, 59, 0.35)";
-        ctx.lineWidth = 1;
-        ctx.stroke();
-        ctx.font = "700 12px -apple-system, Segoe UI, Roboto, Arial";
-        ctx.fillStyle = COLORS.textMuted;
-        ctx.fillText(`🔥 ${I18N.t("bigPointsWon")}`, M + pad + 10, cy);
+      if (part === "overview") {
+        ctx.font = "700 22px -apple-system, Segoe UI, Roboto, Arial";
         ctx.fillStyle = COLORS.accent;
-        const bpwText = `${pct(s.pressurePointsWonPct)} (${s.pressurePointsWon}/${s.pressurePointsPlayed})`;
-        const bpwW = ctx.measureText(bpwText).width;
-        ctx.fillText(bpwText, M + pad + rowsW - 10 - bpwW, cy);
-        cy += 36;
-      }
-
-      const serveRows = [
-        [I18N.t("firstServe"), `${pct(s.firstServeInPct)} (${s.firstServeInCount})`],
-        [I18N.t("secondServe"), `${pct(s.secondServeInPct)} (${s.secondServeInCount})`],
-        [I18N.t("doubleFault"), `${pct(s.doubleFaultPct)} (${s.doubleFaultCount})`],
-        [I18N.t("firstServePtsWon"), pct(s.firstServeWonPct)],
-        [I18N.t("secondServePtsWon"), pct(s.secondServeWonPct)],
-        [I18N.t("servicePtsWon"), pct(s.servicePointsWonPct)],
-        [I18N.t("serviceGamesWon"), `${pct(s.serviceGamesWonPct)} (${s.serviceGamesWon}/${s.serviceGamesPlayed})`],
-        [I18N.t("aces"), String(s.aceCount)],
-        [I18N.t("doubleFaults"), String(s.doubleFaultCount)],
-        [I18N.t("breakPointsSaved"), s.breakPointsFaced ? `${pct(s.breakPointsSavedPct)} (${s.breakPointsSaved}/${s.breakPointsFaced})` : "-"],
-      ];
-      const returnRows = [
-        [I18N.t("firstServeReturnWon"), pct(s.firstServeReturnWonPct)],
-        [I18N.t("secondServeReturnWon"), pct(s.secondServeReturnWonPct)],
-        [I18N.t("returnPtsWon"), pct(s.returnPointsWonPct)],
-        [I18N.t("returnGamesWon"), `${pct(s.returnGamesWonPct)} (${s.returnGamesWon}/${s.returnGamesPlayed})`],
-        [I18N.t("breakPointsConverted"), s.breakPointsChances ? `${pct(s.breakPointsConvertedPct)} (${s.breakPointsConverted}/${s.breakPointsChances})` : "-"],
-      ];
-      const shotRows = [
-        [I18N.t("winners"), String(s.winnersCount)],
-        [I18N.t("unforcedErrors"), String(s.unforcedErrorsCount)],
-        [I18N.t("forcedErrors"), String(s.forcedErrorsCount)],
-        [I18N.t("winnerUeRatio"), ratio(s.winnerToUERatio)],
-        [I18N.t("netPointsWon"), s.netPointsPlayed ? `${pct(s.netPointsWonPct)} (${s.netPointsPlayed} ${I18N.t("pts")})` : "-"],
-        [I18N.t("shotsPlayed"), `${I18N.t("volley")} ${s.shotsPlayed.volley} · ${I18N.t("smash")} ${s.shotsPlayed.smash}`],
-        ["", `${I18N.t("drop")} ${s.shotsPlayed.drop} · ${I18N.t("slice")} ${s.shotsPlayed.slice}`],
-        [I18N.t("streaks"), `${s.longestWinStreak}W / ${s.longestLossStreak}L`],
-        [I18N.t("ueOnPressure"), s.unforcedErrorsCount ? `${s.unforcedErrorsOnPressure}/${s.unforcedErrorsCount}` : "-"],
-      ];
-      const rallyRows = s.rallyBreakdown.map((b) => [`${b.id} ${I18N.t("colShots")}`, b.played ? `${pct(b.wonPct)} (${b.won}/${b.played})` : "-"]);
-      rallyRows.unshift([I18N.t("rallyAnalysis"), I18N.t("avgShots", { n: s.avgRallyLength.toFixed(1) })]);
-
-      [[I18N.t("serve"), serveRows], [I18N.t("returnLbl"), returnRows], [I18N.t("shotEfficiency"), shotRows], [I18N.t("rallyAnalysis"), rallyRows]].forEach(([label, rows]) => {
-        cy += 4;
-        sectionTitle(label, M + pad, cy);
-        cy += 18;
-        ctx.strokeStyle = COLORS.divider;
-        ctx.beginPath(); ctx.moveTo(M + pad, cy - 12); ctx.lineTo(M + cardW - pad, cy - 12); ctx.stroke();
-        rows.forEach(([l, v]) => { statRow(l, v, M + pad, cy, rowsW); cy += rowH; });
-        cy += 6;
-      });
-
-      // GAME TREND - one bar per game, height = points-won % that game, so a
-      // coach can spot at a glance where the player pulled away or faded.
-      if (s.gameTrend && s.gameTrend.length) {
-        cy += 4;
-        sectionTitle(I18N.t("gameTrend"), M + pad, cy);
-        cy += 18;
-        ctx.strokeStyle = COLORS.divider;
-        ctx.beginPath(); ctx.moveTo(M + pad, cy - 12); ctx.lineTo(M + cardW - pad, cy - 12); ctx.stroke();
-        const barAreaH = 40, gap = 3;
-        const barW = Math.max(2, (rowsW - gap * (s.gameTrend.length - 1)) / s.gameTrend.length);
-        s.gameTrend.forEach((g, i) => {
-          const bh = Math.max(3, (g.wonPct / 100) * barAreaH);
-          const bx = M + pad + i * (barW + gap);
-          const by = cy + (barAreaH - bh);
-          ctx.fillStyle = g.wonPct >= 50 ? COLORS.good : COLORS.warn;
-          roundRect(ctx, bx, by, barW, bh, Math.min(2, barW / 2));
-          ctx.fill();
-        });
-        cy += barAreaH + 14;
-      }
-
-      // BY COURT ZONE - a compact table; winners & unforced errors are bold and
-      // colored so they stand out, forced errors stay small and muted.
-      cy += 4;
-      sectionTitle(I18N.t("byCourtZone"), M + pad, cy);
-      cy += 18;
-      ctx.strokeStyle = COLORS.divider;
-      ctx.beginPath(); ctx.moveTo(M + pad, cy - 12); ctx.lineTo(M + cardW - pad, cy - 12); ctx.stroke();
-      const zCol3 = M + pad + rowsW - 16, zCol2 = zCol3 - 42, zCol1 = zCol2 - 42;
-      ctx.font = "700 10px -apple-system, Segoe UI, Roboto, Arial";
-      ctx.fillStyle = COLORS.textMuted;
-      ctx.textAlign = "center";
-      ctx.fillText("W", zCol1, cy);
-      ctx.fillText("U.ERR", zCol2, cy);
-      ctx.fillText("F.ERR", zCol3, cy);
-      ctx.textAlign = "left";
-      cy += rowH;
-      card.s.zoneStats.forEach((z) => {
-        ctx.beginPath(); ctx.arc(M + pad + 4, cy - 4, 4, 0, Math.PI * 2);
-        ctx.fillStyle = ZONE_COLORS[z.zone - 1]; ctx.fill();
+        ctx.fillText(`${pct(s.pointsWonPct)} ${I18N.t("totalPointsWon")}`, M + pad, cy);
+        cy += 20;
         ctx.font = "13px -apple-system, Segoe UI, Roboto, Arial";
         ctx.fillStyle = COLORS.textMuted;
-        ctx.fillText(I18N.t("zoneN", { n: z.zone }), M + pad + 14, cy);
+        ctx.fillText(`(${s.pointsWon}/${s.pointsPlayed})`, M + pad, cy);
+        cy += 20;
 
-        ctx.textAlign = "center";
-        ctx.font = "800 15px -apple-system, Segoe UI, Roboto, Arial";
-        ctx.fillStyle = COLORS.good;
-        ctx.fillText(String(z.winners), zCol1, cy);
-        ctx.fillStyle = COLORS.warn;
-        ctx.fillText(String(z.unforcedErrors), zCol2, cy);
-        ctx.font = "12px -apple-system, Segoe UI, Roboto, Arial";
-        ctx.fillStyle = COLORS.textMuted;
-        ctx.fillText(String(z.forcedErrors), zCol3, cy);
-        ctx.textAlign = "left";
-        cy += rowH;
-      });
+        if (s.pressurePointsPlayed) {
+          roundRect(ctx, M + pad, cy - 14, rowsW, 26, 8);
+          ctx.fillStyle = "rgba(255, 212, 59, 0.12)";
+          ctx.fill();
+          ctx.strokeStyle = "rgba(255, 212, 59, 0.35)";
+          ctx.lineWidth = 1;
+          ctx.stroke();
+          ctx.font = "700 12px -apple-system, Segoe UI, Roboto, Arial";
+          ctx.fillStyle = COLORS.textMuted;
+          ctx.fillText(`🔥 ${I18N.t("bigPointsWon")}`, M + pad + 10, cy);
+          ctx.fillStyle = COLORS.accent;
+          const bpwText = `${pct(s.pressurePointsWonPct)} (${s.pressurePointsWon}/${s.pressurePointsPlayed})`;
+          const bpwW = ctx.measureText(bpwText).width;
+          ctx.fillText(bpwText, M + pad + rowsW - 10 - bpwW, cy);
+          cy += 36;
+        }
 
-      // BY SHOT TYPE - same compact layout as the zone table, only shown for
-      // shot types the coach actually tagged during the match.
-      if (s.shotTypeStats && s.shotTypeStats.length) {
+        const serveRows = [
+          [I18N.t("firstServe"), `${pct(s.firstServeInPct)} (${s.firstServeInCount})`],
+          [I18N.t("secondServe"), `${pct(s.secondServeInPct)} (${s.secondServeInCount})`],
+          [I18N.t("doubleFault"), `${pct(s.doubleFaultPct)} (${s.doubleFaultCount})`],
+          [I18N.t("firstServePtsWon"), pct(s.firstServeWonPct)],
+          [I18N.t("secondServePtsWon"), pct(s.secondServeWonPct)],
+          [I18N.t("servicePtsWon"), pct(s.servicePointsWonPct)],
+          [I18N.t("serviceGamesWon"), `${pct(s.serviceGamesWonPct)} (${s.serviceGamesWon}/${s.serviceGamesPlayed})`],
+          [I18N.t("aces"), String(s.aceCount)],
+          [I18N.t("doubleFaults"), String(s.doubleFaultCount)],
+          [I18N.t("breakPointsSaved"), s.breakPointsFaced ? `${pct(s.breakPointsSavedPct)} (${s.breakPointsSaved}/${s.breakPointsFaced})` : "-"],
+        ];
+        const returnRows = [
+          [I18N.t("firstServeReturnWon"), pct(s.firstServeReturnWonPct)],
+          [I18N.t("secondServeReturnWon"), pct(s.secondServeReturnWonPct)],
+          [I18N.t("returnPtsWon"), pct(s.returnPointsWonPct)],
+          [I18N.t("returnGamesWon"), `${pct(s.returnGamesWonPct)} (${s.returnGamesWon}/${s.returnGamesPlayed})`],
+          [I18N.t("breakPointsConverted"), s.breakPointsChances ? `${pct(s.breakPointsConvertedPct)} (${s.breakPointsConverted}/${s.breakPointsChances})` : "-"],
+        ];
+        statSections([[I18N.t("serve"), serveRows], [I18N.t("returnLbl"), returnRows]]);
+      }
+
+      if (part === "shots") {
+        const shotRows = [
+          [I18N.t("winners"), String(s.winnersCount)],
+          [I18N.t("unforcedErrors"), String(s.unforcedErrorsCount)],
+          [I18N.t("forcedErrors"), String(s.forcedErrorsCount)],
+          [I18N.t("winnerUeRatio"), ratio(s.winnerToUERatio)],
+          [I18N.t("netPointsWon"), s.netPointsPlayed ? `${pct(s.netPointsWonPct)} (${s.netPointsPlayed} ${I18N.t("pts")})` : "-"],
+          [I18N.t("shotsPlayed"), `${I18N.t("volley")} ${s.shotsPlayed.volley} · ${I18N.t("smash")} ${s.shotsPlayed.smash}`],
+          ["", `${I18N.t("drop")} ${s.shotsPlayed.drop} · ${I18N.t("slice")} ${s.shotsPlayed.slice}`],
+          [I18N.t("streaks"), `${s.longestWinStreak}W / ${s.longestLossStreak}L`],
+          [I18N.t("ueOnPressure"), s.unforcedErrorsCount ? `${s.unforcedErrorsOnPressure}/${s.unforcedErrorsCount}` : "-"],
+        ];
+        const rallyRows = s.rallyBreakdown.map((b) => [`${b.id} ${I18N.t("colShots")}`, b.played ? `${pct(b.wonPct)} (${b.won}/${b.played})` : "-"]);
+        rallyRows.unshift([I18N.t("rallyAnalysis"), I18N.t("avgShots", { n: s.avgRallyLength.toFixed(1) })]);
+        statSections([[I18N.t("shotEfficiency"), shotRows], [I18N.t("rallyAnalysis"), rallyRows]]);
+
+        // GAME TREND - one bar per game, height = points-won % that game, so a
+        // coach can spot at a glance where the player pulled away or faded.
+        if (s.gameTrend && s.gameTrend.length) {
+          cy += 4;
+          sectionTitle(I18N.t("gameTrend"), M + pad, cy);
+          cy += 18;
+          ctx.strokeStyle = COLORS.divider;
+          ctx.beginPath(); ctx.moveTo(M + pad, cy - 12); ctx.lineTo(M + cardW - pad, cy - 12); ctx.stroke();
+          const barAreaH = 40, gap = 3;
+          const barW = Math.max(2, (rowsW - gap * (s.gameTrend.length - 1)) / s.gameTrend.length);
+          s.gameTrend.forEach((g, i) => {
+            const bh = Math.max(3, (g.wonPct / 100) * barAreaH);
+            const bx = M + pad + i * (barW + gap);
+            const by = cy + (barAreaH - bh);
+            ctx.fillStyle = g.wonPct >= 50 ? COLORS.good : COLORS.warn;
+            roundRect(ctx, bx, by, barW, bh, Math.min(2, barW / 2));
+            ctx.fill();
+          });
+          cy += barAreaH + 14;
+        }
+      }
+
+      if (part === "placement") {
+        // BY COURT ZONE - a compact table; winners & unforced errors are bold
+        // and colored so they stand out, forced errors stay small and muted.
         cy += 4;
-        sectionTitle(I18N.t("byShotType"), M + pad, cy);
+        sectionTitle(I18N.t("byCourtZone"), M + pad, cy);
         cy += 18;
         ctx.strokeStyle = COLORS.divider;
         ctx.beginPath(); ctx.moveTo(M + pad, cy - 12); ctx.lineTo(M + cardW - pad, cy - 12); ctx.stroke();
+        const zCol3 = M + pad + rowsW - 16, zCol2 = zCol3 - 42, zCol1 = zCol2 - 42;
         ctx.font = "700 10px -apple-system, Segoe UI, Roboto, Arial";
         ctx.fillStyle = COLORS.textMuted;
         ctx.textAlign = "center";
@@ -346,11 +352,12 @@
         ctx.fillText("F.ERR", zCol3, cy);
         ctx.textAlign = "left";
         cy += rowH;
-        const shotTypeLabel = { volley: I18N.t("volley"), smash: I18N.t("smash"), drop: I18N.t("dropShot"), slice: I18N.t("slice") };
-        s.shotTypeStats.forEach((z) => {
+        card.s.zoneStats.forEach((z) => {
+          ctx.beginPath(); ctx.arc(M + pad + 4, cy - 4, 4, 0, Math.PI * 2);
+          ctx.fillStyle = ZONE_COLORS[z.zone - 1]; ctx.fill();
           ctx.font = "13px -apple-system, Segoe UI, Roboto, Arial";
           ctx.fillStyle = COLORS.textMuted;
-          ctx.fillText(shotTypeLabel[z.shotType], M + pad, cy);
+          ctx.fillText(I18N.t("zoneN", { n: z.zone }), M + pad + 14, cy);
 
           ctx.textAlign = "center";
           ctx.font = "800 15px -apple-system, Segoe UI, Roboto, Arial";
@@ -364,12 +371,54 @@
           ctx.textAlign = "left";
           cy += rowH;
         });
+
+        // BY SHOT TYPE - same compact layout as the zone table, only shown
+        // for shot types the coach actually tagged during the match.
+        if (s.shotTypeStats && s.shotTypeStats.length) {
+          cy += 4;
+          sectionTitle(I18N.t("byShotType"), M + pad, cy);
+          cy += 18;
+          ctx.strokeStyle = COLORS.divider;
+          ctx.beginPath(); ctx.moveTo(M + pad, cy - 12); ctx.lineTo(M + cardW - pad, cy - 12); ctx.stroke();
+          ctx.font = "700 10px -apple-system, Segoe UI, Roboto, Arial";
+          ctx.fillStyle = COLORS.textMuted;
+          ctx.textAlign = "center";
+          ctx.fillText("W", zCol1, cy);
+          ctx.fillText("U.ERR", zCol2, cy);
+          ctx.fillText("F.ERR", zCol3, cy);
+          ctx.textAlign = "left";
+          cy += rowH;
+          const shotTypeLabel = { volley: I18N.t("volley"), smash: I18N.t("smash"), drop: I18N.t("dropShot"), slice: I18N.t("slice") };
+          s.shotTypeStats.forEach((z) => {
+            ctx.font = "13px -apple-system, Segoe UI, Roboto, Arial";
+            ctx.fillStyle = COLORS.textMuted;
+            ctx.fillText(shotTypeLabel[z.shotType], M + pad, cy);
+
+            ctx.textAlign = "center";
+            ctx.font = "800 15px -apple-system, Segoe UI, Roboto, Arial";
+            ctx.fillStyle = COLORS.good;
+            ctx.fillText(String(z.winners), zCol1, cy);
+            ctx.fillStyle = COLORS.warn;
+            ctx.fillText(String(z.unforcedErrors), zCol2, cy);
+            ctx.font = "12px -apple-system, Segoe UI, Roboto, Arial";
+            ctx.fillStyle = COLORS.textMuted;
+            ctx.fillText(String(z.forcedErrors), zCol3, cy);
+            ctx.textAlign = "left";
+            cy += rowH;
+          });
+        }
       }
 
       y += h + 16;
     });
 
     return canvas;
+  }
+
+  // Renders all 3 parts for the same header/cards, ready to hand straight to
+  // shareOrDownloadMultiple.
+  function renderStatsCanvasParts(matchHeader, cards) {
+    return STATS_PARTS.map((p) => ({ suffix: p.id, canvas: renderStatsCanvas(matchHeader, cards, p.id) }));
   }
 
   // ---------- Point log -> image ----------
@@ -465,6 +514,6 @@
   }
 
   window.TennisExport = {
-    shareOrDownloadCanvas, shareOrDownloadMultiple, renderStatsCanvas, renderLogCanvas, printSection,
+    shareOrDownloadCanvas, shareOrDownloadMultiple, renderStatsCanvas, renderStatsCanvasParts, renderLogCanvas, printSection,
   };
 })();
