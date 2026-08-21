@@ -97,7 +97,7 @@
   }));
   $("#btn-nav-about").addEventListener("click", () => showView("about"));
   $("#btn-nav-players").addEventListener("click", () => { showView("players"); renderPlayersList(); resetPlayerForm(); });
-  $("#btn-nav-player-stats").addEventListener("click", () => { showView("playerStats"); renderPlayerStatsSelect(); });
+  $("#btn-nav-player-stats").addEventListener("click", () => { showView("playerStats"); renderPlayerStatsSelect(true); });
 
   // ---------- HOME ----------
   function renderHome() {
@@ -1123,9 +1123,128 @@
       .map(rec => ({ sets: rec.match.sets, pointLog: rec.match.pointLog, player: rec.player1Id === playerId ? 1 : 2 }));
   }
 
-  function renderPlayerStatsSelect() {
+  // Match-level (not point-level) career stats: how many matches, on which
+  // surfaces, decided in how many sets, tiebreak record, and time on court.
+  // Lives here rather than in scoring.js because it needs match-record
+  // metadata (surface, start/end time) that TennisMatch itself doesn't carry.
+  function computeCareerStats(playerId) {
+    const recs = Storage.loadAll().filter(rec => rec.player1Id === playerId || rec.player2Id === playerId);
+    const finished = recs.filter(rec => rec.finished);
+    const slotOf = (rec) => (rec.player1Id === playerId ? 1 : 2);
+
+    const matchesPlayed = recs.length;
+    const matchesFinished = finished.length;
+    const matchesWon = finished.filter(rec => rec.match.matchWinner === slotOf(rec)).length;
+    const matchesLost = matchesFinished - matchesWon;
+    const matchWinPct = matchesFinished ? (matchesWon / matchesFinished) * 100 : 0;
+
+    const bySurface = SURFACES.map(surface => {
+      const surfMatches = finished.filter(rec => rec.surface === surface);
+      const won = surfMatches.filter(rec => rec.match.matchWinner === slotOf(rec)).length;
+      return { surface, played: surfMatches.length, won, winPct: surfMatches.length ? (won / surfMatches.length) * 100 : 0 };
+    });
+    const playedSurfaces = bySurface.filter(s => s.played > 0);
+    const mostPlayedSurface = playedSurfaces.length ? playedSurfaces.reduce((a, b) => (b.played > a.played ? b : a)) : null;
+    const surfacesWithSample = playedSurfaces.filter(s => s.played >= 2);
+    const bestSurface = surfacesWithSample.length ? surfacesWithSample.reduce((a, b) => (b.winPct > a.winPct ? b : a)) : null;
+
+    const totalCourtMinutes = recs.reduce((sum, rec) => {
+      const start = rec.match.matchStartTime, end = rec.match.matchEndTime;
+      if (!start || !end) return sum;
+      return sum + Math.max(0, (new Date(end) - new Date(start)) / 60000);
+    }, 0);
+
+    // Grouped by how many sets it actually took to decide the match (2 = straight
+    // sets, 3 = deciding set, etc.) rather than assuming a fixed best-of.
+    const setsBreakdownMap = {};
+    finished.forEach(rec => {
+      const n = (rec.match.sets || []).filter(s => s.winner).length;
+      if (!n) return;
+      if (!setsBreakdownMap[n]) setsBreakdownMap[n] = { setsCount: n, played: 0, won: 0 };
+      setsBreakdownMap[n].played++;
+      if (rec.match.matchWinner === slotOf(rec)) setsBreakdownMap[n].won++;
+    });
+    const setsBreakdown = Object.values(setsBreakdownMap)
+      .sort((a, b) => a.setsCount - b.setsCount)
+      .map(x => ({ ...x, winPct: x.played ? (x.won / x.played) * 100 : 0 }));
+
+    let tiebreaksPlayed = 0, tiebreaksWon = 0;
+    recs.forEach(rec => {
+      const slot = slotOf(rec);
+      (rec.match.sets || []).forEach(set => {
+        (set.games || []).forEach(game => {
+          if (game.tiebreak && game.winner) {
+            tiebreaksPlayed++;
+            if (game.winner === slot) tiebreaksWon++;
+          }
+        });
+      });
+    });
+    const tiebreakWinPct = tiebreaksPlayed ? (tiebreaksWon / tiebreaksPlayed) * 100 : 0;
+
+    return {
+      matchesPlayed, matchesFinished, matchesWon, matchesLost, matchWinPct,
+      bySurface, mostPlayedSurface, bestSurface, totalCourtMinutes,
+      setsBreakdown, tiebreaksPlayed, tiebreaksWon, tiebreakWinPct,
+    };
+  }
+
+  function formatCourtMinutes(mins) {
+    const total = Math.round(mins);
+    const h = Math.floor(total / 60), m = total % 60;
+    return h > 0 ? t("durationH", { h, m }) : t("durationM", { m });
+  }
+
+  function careerStatsPanel(cs, playerName) {
+    const surfaceRows = cs.bySurface.filter(s => s.played > 0).map(s => `
+      <div class="zone-stat-row">
+        <span class="zone-stat-label">${t("surface_" + s.surface)}</span>
+        <span class="zone-stat-win">${s.played}</span>
+        <span class="zone-stat-ue">${pct(s.winPct)}</span>
+        <span class="zone-stat-minor"></span>
+      </div>`).join("");
+    const setsRows = cs.setsBreakdown.map(s => `
+      <div class="stat-row"><span>${t("setsCountLabel", { n: s.setsCount })}</span><span>${s.played} (${pct(s.winPct)})</span></div>`).join("");
+
+    return `
+      <div class="summary-card">
+        <div class="summary-card-head">
+          <div>
+            <div class="summary-card-player">${escapeHtml(playerName)}</div>
+            <h3>${t("careerOverview")}</h3>
+          </div>
+        </div>
+        <div class="stat-grid-2">
+          <div class="mini-stat"><span class="mini-stat-num">${cs.matchesPlayed}</span><span class="mini-stat-label">${t("matchesPlayedLbl")}</span></div>
+          <div class="mini-stat"><span class="mini-stat-num">${cs.matchesWon}</span><span class="mini-stat-label">${t("matchesWonLbl")}</span></div>
+          <div class="mini-stat"><span class="mini-stat-num">${cs.matchesLost}</span><span class="mini-stat-label">${t("matchesLostLbl")}</span></div>
+          <div class="mini-stat"><span class="mini-stat-num">${pct(cs.matchWinPct)}</span><span class="mini-stat-label">${t("matchWinPctLbl")}</span></div>
+        </div>
+        <div class="stat-row" style="margin-top:8px;"><span>${t("timeOnCourt")}</span><span>${formatCourtMinutes(cs.totalCourtMinutes)}</span></div>
+        <div class="stat-row"><span>${t("tiebreaksPlayedWon")}</span><span>${cs.tiebreaksWon}/${cs.tiebreaksPlayed} (${pct(cs.tiebreakWinPct)})</span></div>
+        ${cs.mostPlayedSurface ? `<div class="stat-row"><span>${t("mostPlayedSurface")}</span><span>${t("surface_" + cs.mostPlayedSurface.surface)}</span></div>` : ""}
+        ${cs.bestSurface ? `<div class="stat-row"><span>${t("bestSurface")}</span><span>${t("surface_" + cs.bestSurface.surface)} (${pct(cs.bestSurface.winPct)})</span></div>` : ""}
+        ${surfaceRows ? `
+        <div class="summary-section">
+          <div class="summary-section-title">${t("bySurface")}</div>
+          <div class="zone-stats-head"><span></span><span class="zh-win">${t("played")}</span><span class="zh-ue">${t("winPct")}</span><span></span></div>
+          ${surfaceRows}
+        </div>` : ""}
+        ${setsRows ? `
+        <div class="summary-section">
+          <div class="summary-section-title">${t("bySetsCount")}</div>
+          ${setsRows}
+        </div>` : ""}
+      </div>`;
+  }
+
+  // `reset` clears the selection when the coach navigates into this screen
+  // fresh, so they always actively pick who they want stats for instead of
+  // silently seeing whoever was picked last time. Language-switch re-renders
+  // pass reset=false to keep whatever's currently on screen.
+  function renderPlayerStatsSelect(reset = false) {
     const sel = $("#f-player-stats-select");
-    const prevValue = sel.value;
+    const prevValue = reset ? "" : sel.value;
     const players = Players.loadAll();
     sel.innerHTML = `<option value="">${t("selectPlayerPlaceholder")}</option>` +
       players.map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join("");
@@ -1157,7 +1276,8 @@
     agg.gameTrend = computeMatchTrend(entries); // per-match trend, not per-game (game numbers collide across matches)
     const title = t("matchesCount", { n: entries.length });
     const card = { playerName: player.name, title, scoreLabel: null, s: agg };
-    content.innerHTML = summaryCard(card.playerName, card.title, card.scoreLabel, card.s, false, "matchTrend");
+    const career = computeCareerStats(playerId);
+    content.innerHTML = careerStatsPanel(career, player.name) + summaryCard(card.playerName, card.title, card.scoreLabel, card.s, false, "matchTrend");
     actions.classList.remove("hidden");
     lastPlayerStatsData = { header: { title: player.name, subtitle: title }, cards: [card] };
   }

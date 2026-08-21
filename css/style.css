@@ -234,6 +234,7 @@ thead { background: #eef2ee; position: sticky; top: 0; }
 #view-player-stats > label { display: flex; flex-direction: column; gap: 4px; font-size: 0.85rem; color: rgba(255,255,255,0.6); margin-bottom: 4px; }
 #view-player-stats > label select { padding: 10px; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; font-size: 1rem; background: rgba(255,255,255,0.06); color: white; }
 #view-player-stats .empty-hint { color: rgba(255,255,255,0.5); }
+#player-stats-content .summary-card:not(:first-child) { margin-top: 16px; }
 
 /* Match "credits" strip: date/time/duration/tournament/round/club/city/coach - only filled-in fields show */
 .match-info-strip {
@@ -362,7 +363,7 @@ thead { background: #eef2ee; position: sticky; top: 0; }
 .zone-stat-minor { text-align: center; font-size: 0.72rem; color: rgba(255,255,255,0.4); font-weight: 700; }
 
 /* AI Review: on-device, rule-based coaching notes shown on the match summary screen */
-#ai-review-wrap .ai-review-wrap-inner { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.12); }
+#ai-review-wrap .ai-review-wrap-inner, #player-stats-ai-wrap .ai-review-wrap-inner { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.12); }
 .ai-review-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
 .ai-review-head h3 { margin: 0 0 2px; color: white; font-size: 1.1rem; }
 .ai-review-subtitle { font-size: 0.78rem; color: rgba(255,255,255,0.55); }
