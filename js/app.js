@@ -557,6 +557,11 @@
           ${ring(s.pointsWonPct, "--accent-1")}
           <div class="stat-ring-label">${t("totalPointsWon")}<br><strong>${s.pointsWon}/${s.pointsPlayed}</strong></div>
         </div>
+        ${s.pressurePointsPlayed ? `
+        <div class="stat-row pressure-highlight">
+          <span>🔥 ${t("bigPointsWon")}</span>
+          <span>${pct(s.pressurePointsWonPct)} (${s.pressurePointsWon}/${s.pressurePointsPlayed})</span>
+        </div>` : ""}
 
         <div class="summary-section">
           <div class="summary-section-title">${t("serve")}</div>
@@ -604,11 +609,18 @@
               <span>${t("drop")} ${s.shotsPlayed.drop} · ${t("slice")} ${s.shotsPlayed.slice}</span>
             </span>
           </div>
+          <div class="stat-row"><span>${t("streaks")}</span><span>${s.longestWinStreak}W / ${s.longestLossStreak}L</span></div>
+          <div class="stat-row"><span>${t("ueOnPressure")}</span><span>${s.unforcedErrorsCount ? `${s.unforcedErrorsOnPressure}/${s.unforcedErrorsCount}` : "-"}</span></div>
         </div>
 
         <div class="summary-section">
           <div class="summary-section-title">${t("rallyAnalysis")} <small>(${t("avgShots", { n: s.avgRallyLength.toFixed(1) })})</small></div>
           ${rallyBars(s.rallyBreakdown)}
+        </div>
+
+        <div class="summary-section">
+          <div class="summary-section-title">${t("gameTrend")}</div>
+          ${gameTrendBars(s.gameTrend)}
         </div>
 
         <div class="summary-section">
@@ -618,6 +630,15 @@
           </div>
           ${zoneStatsRows(s.zoneStats)}
         </div>
+
+        ${s.shotTypeStats.length ? `
+        <div class="summary-section">
+          <div class="summary-section-title">${t("byShotType")}</div>
+          <div class="zone-stats-head">
+            <span></span><span class="zh-win">W</span><span class="zh-ue">U.ERR</span><span class="zh-fe">F.ERR</span>
+          </div>
+          ${shotTypeStatsRows(s.shotTypeStats)}
+        </div>` : ""}
       </div>`;
   }
 
@@ -629,6 +650,27 @@
         <span class="zone-stat-ue">${z.unforcedErrors}</span>
         <span class="zone-stat-minor">${z.forcedErrors}</span>
       </div>`).join("");
+  }
+
+  function shotTypeStatsRows(shotTypeStats) {
+    const shotL = shotLabel();
+    return shotTypeStats.map(z => `
+      <div class="zone-stat-row">
+        <span class="zone-stat-label">${shotL[z.shotType]}</span>
+        <span class="zone-stat-win">${z.winners}</span>
+        <span class="zone-stat-ue">${z.unforcedErrors}</span>
+        <span class="zone-stat-minor">${z.forcedErrors}</span>
+      </div>`).join("");
+  }
+
+  // Compact bar-per-game strip: height/color show how dominant each game was,
+  // so a coach can spot where the player pulled away or faded across the match.
+  function gameTrendBars(games) {
+    if (!games.length) return `<div class="empty-hint">-</div>`;
+    return `<div class="game-trend">${games.map((g, i) => `
+      <div class="game-trend-bar-wrap" title="${t("gameWord")} ${i + 1}: ${pct(g.wonPct)}% (${g.won}/${g.played})">
+        <div class="game-trend-bar ${g.wonPct >= 50 ? "gt-win" : "gt-loss"}" style="height:${Math.max(8, g.wonPct)}%"></div>
+      </div>`).join("")}</div>`;
   }
 
   // Groups the summary into Set 1, Set 2, ..., Match Total sections, each

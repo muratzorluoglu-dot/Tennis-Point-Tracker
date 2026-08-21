@@ -299,6 +299,22 @@ thead { background: #eef2ee; position: sticky; top: 0; }
 .rally-bar-value { color: white; font-weight: 600; text-align: right; }
 .rally-bar-value small { color: rgba(255,255,255,0.55); font-weight: 400; }
 
+/* Big-points-won highlight, right under the main points-won ring */
+.pressure-highlight {
+  display: flex; justify-content: space-between; align-items: center;
+  background: rgba(255, 212, 59, 0.1); border: 1px solid rgba(255, 212, 59, 0.28);
+  border-radius: 10px; padding: 7px 12px; margin: 2px 0 14px; font-size: 0.85rem;
+}
+.pressure-highlight span:first-child { color: rgba(255,255,255,0.8); font-weight: 600; }
+.pressure-highlight span:last-child { color: var(--accent-1); font-weight: 800; }
+
+/* Game-by-game trend: one bar per game, height = points-won % that game */
+.game-trend { display: flex; align-items: flex-end; gap: 4px; height: 46px; }
+.game-trend-bar-wrap { flex: 1; height: 100%; display: flex; align-items: flex-end; min-width: 3px; }
+.game-trend-bar { width: 100%; border-radius: 3px 3px 0 0; min-height: 4px; }
+.gt-win { background: #51cf66; }
+.gt-loss { background: #ff6b6b; }
+
 /* By-zone winner/forced/unforced error breakdown - winner & unforced error stand out, forced error is muted */
 .zone-stats-head, .zone-stat-row {
   display: grid; grid-template-columns: 1fr 52px 62px 50px; align-items: center; gap: 4px;
@@ -422,6 +438,13 @@ thead { background: #eef2ee; position: sticky; top: 0; }
   body.printing-summary .zone-stat-row { border-top-color: #eee !important; }
   body.printing-summary .zone-stat-label { color: #1a1a1a !important; }
   body.printing-summary .zone-stat-minor { color: #9ca3af !important; }
+  body.printing-summary .pressure-highlight {
+    padding: 4px 8px; margin: 1px 0 6px; font-size: 0.62rem;
+    background: #fff8e1 !important; border-color: #f0d060 !important;
+  }
+  body.printing-summary .pressure-highlight span:first-child { color: #4b5563 !important; }
+  body.printing-summary .pressure-highlight span:last-child { color: #b8860b !important; }
+  body.printing-summary .game-trend { height: 26px; }
 
   body.printing-log table { color: black; }
   body.printing-log th, body.printing-log td { border-color: #ccc !important; }

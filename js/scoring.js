@@ -210,6 +210,9 @@ class TennisMatch {
 
     // break point detection (regular service games only, not during tiebreaks)
     const isBreakPointChance = !gameBefore.tiebreak && this._wouldWinGame(gameBefore, returner);
+    // what's at stake for this exact point (break/game/set/match point, for whichever
+    // player it applies to) - captured before the point is applied, for pressure-point stats
+    const stakes = this.pointStakes();
 
     // update in-game point count
     if (winner === 1) gameBefore.p1++; else gameBefore.p2++;
@@ -299,6 +302,7 @@ class TennisMatch {
       breakPoint: isBreakPointChance,
       breakPointSaved: isBreakPointChance && winner === server,
       breakPointConverted: isBreakPointChance && winner === returner,
+      stakes, // [{player, key: 'breakPoint'|'gamePoint'|'setPoint'|'matchPoint'}] - what was on the line before this point
       gameScore: gameEnded ? setScoreAfter : "",
       gameEnded, setEnded, matchEnded,
       timestamp: new Date().toISOString(),
@@ -422,6 +426,50 @@ function computeStats(sets, pointLog, player, setNo /* null = whole match */) {
   rows.forEach(p => {
     const isThisPlayersAction = shotOwner(p) === player;
     if (isThisPlayersAction) (p.shots || []).forEach(shot => { if (s.shotsPlayed[shot] !== undefined) s.shotsPlayed[shot]++; });
+  });
+
+  // Winners/errors broken down by which shot type produced them (only shot
+  // types actually used show up, so a match with no slices doesn't add a
+  // pointless zero row).
+  s.shotTypeStats = Object.keys(s.shotsPlayed).map(shotType => ({
+    shotType,
+    winners: rows.filter(p => p.outcome === "winner" && p.winnerPlayer === player && (p.shots || []).includes(shotType)).length,
+    unforcedErrors: rows.filter(p => p.outcome === "unforced_error" && p.errorPlayer === player && (p.shots || []).includes(shotType)).length,
+    forcedErrors: rows.filter(p => p.outcome === "forced_error" && p.errorPlayer === player && (p.shots || []).includes(shotType)).length,
+  })).filter(z => z.winners + z.unforcedErrors + z.forcedErrors > 0);
+
+  // --- Pressure points: break/game/set/match points, from either player's
+  // perspective - the "big points" of the match, regardless of who they were
+  // numerically at stake for (this is how coaches/broadcasts usually talk
+  // about them, not split by server/returner role).
+  const isPressurePoint = (p) => (p.stakes || []).length > 0;
+  const pressureRows = rows.filter(isPressurePoint);
+  s.pressurePointsPlayed = pressureRows.length;
+  s.pressurePointsWon = pressureRows.filter(p => p.pointWinner === player).length;
+  s.pressurePointsWonPct = pressureRows.length ? (s.pressurePointsWon / pressureRows.length) * 100 : 0;
+  s.unforcedErrorsOnPressure = rows.filter(p => p.outcome === "unforced_error" && p.errorPlayer === player && isPressurePoint(p)).length;
+
+  // --- Streaks: longest run of consecutive points won / lost, in play order ---
+  let curWin = 0, curLoss = 0;
+  s.longestWinStreak = 0; s.longestLossStreak = 0;
+  rows.forEach(p => {
+    if (p.pointWinner === player) { curWin++; curLoss = 0; } else { curLoss++; curWin = 0; }
+    if (curWin > s.longestWinStreak) s.longestWinStreak = curWin;
+    if (curLoss > s.longestLossStreak) s.longestLossStreak = curLoss;
+  });
+
+  // --- Game trend: points-won % within each game played, in chronological
+  // order, so a coach can see where the player pulled away or faded.
+  const gameGroups = [];
+  let lastGameKey = null;
+  rows.forEach(p => {
+    const key = `${p.setNo}-${p.gameNo}`;
+    if (key !== lastGameKey) { gameGroups.push([]); lastGameKey = key; }
+    gameGroups[gameGroups.length - 1].push(p);
+  });
+  s.gameTrend = gameGroups.map(g => {
+    const won = g.filter(p => p.pointWinner === player).length;
+    return { played: g.length, won, wonPct: g.length ? (won / g.length) * 100 : 0 };
   });
 
   // --- By court zone: where winners and errors happened ---

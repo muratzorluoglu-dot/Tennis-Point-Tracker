@@ -108,14 +108,17 @@
       h += lineH; // player name
       h += lineH + 6; // title row
       h += 44; // points-won highlight (percentage line + fraction line)
+      if (card.s.pressurePointsPlayed) h += 36; // big-points-won badge
       const sections = [
         [I18N.t("serve"), 10],
         [I18N.t("returnLbl"), 5],
-        [I18N.t("shotEfficiency"), card.s.shotsPlayed ? 7 : 5],
+        [I18N.t("shotEfficiency"), card.s.shotsPlayed ? 9 : 5],
         [I18N.t("rallyAnalysis"), 1 + card.s.rallyBreakdown.length],
         [I18N.t("byCourtZone"), 1 + card.s.zoneStats.length],
       ];
       sections.forEach(([, rows]) => { h += 22 + rows * rowH + 10; });
+      if (card.s.gameTrend && card.s.gameTrend.length) h += 22 + 40 + 14; // game-by-game trend bars
+      if (card.s.shotTypeStats && card.s.shotTypeStats.length) h += 22 + (1 + card.s.shotTypeStats.length) * rowH + 10; // by shot type
       h += 20; // bottom padding
       return h;
     }
@@ -210,6 +213,23 @@
       ctx.fillText(`(${s.pointsWon}/${s.pointsPlayed})`, M + pad, cy);
       cy += 20;
 
+      if (s.pressurePointsPlayed) {
+        roundRect(ctx, M + pad, cy - 14, rowsW, 26, 8);
+        ctx.fillStyle = "rgba(255, 212, 59, 0.12)";
+        ctx.fill();
+        ctx.strokeStyle = "rgba(255, 212, 59, 0.35)";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.font = "700 12px -apple-system, Segoe UI, Roboto, Arial";
+        ctx.fillStyle = COLORS.textMuted;
+        ctx.fillText(`🔥 ${I18N.t("bigPointsWon")}`, M + pad + 10, cy);
+        ctx.fillStyle = COLORS.accent;
+        const bpwText = `${pct(s.pressurePointsWonPct)} (${s.pressurePointsWon}/${s.pressurePointsPlayed})`;
+        const bpwW = ctx.measureText(bpwText).width;
+        ctx.fillText(bpwText, M + pad + rowsW - 10 - bpwW, cy);
+        cy += 36;
+      }
+
       const serveRows = [
         [I18N.t("firstServe"), `${pct(s.firstServeInPct)} (${s.firstServeInCount})`],
         [I18N.t("secondServe"), `${pct(s.secondServeInPct)} (${s.secondServeInCount})`],
@@ -237,6 +257,8 @@
         [I18N.t("netPointsWon"), s.netPointsPlayed ? `${pct(s.netPointsWonPct)} (${s.netPointsPlayed} ${I18N.t("pts")})` : "-"],
         [I18N.t("shotsPlayed"), `${I18N.t("volley")} ${s.shotsPlayed.volley} · ${I18N.t("smash")} ${s.shotsPlayed.smash}`],
         ["", `${I18N.t("drop")} ${s.shotsPlayed.drop} · ${I18N.t("slice")} ${s.shotsPlayed.slice}`],
+        [I18N.t("streaks"), `${s.longestWinStreak}W / ${s.longestLossStreak}L`],
+        [I18N.t("ueOnPressure"), s.unforcedErrorsCount ? `${s.unforcedErrorsOnPressure}/${s.unforcedErrorsCount}` : "-"],
       ];
       const rallyRows = s.rallyBreakdown.map((b) => [`${b.id} ${I18N.t("colShots")}`, b.played ? `${pct(b.wonPct)} (${b.won}/${b.played})` : "-"]);
       rallyRows.unshift([I18N.t("rallyAnalysis"), I18N.t("avgShots", { n: s.avgRallyLength.toFixed(1) })]);
@@ -250,6 +272,27 @@
         rows.forEach(([l, v]) => { statRow(l, v, M + pad, cy, rowsW); cy += rowH; });
         cy += 6;
       });
+
+      // GAME TREND - one bar per game, height = points-won % that game, so a
+      // coach can spot at a glance where the player pulled away or faded.
+      if (s.gameTrend && s.gameTrend.length) {
+        cy += 4;
+        sectionTitle(I18N.t("gameTrend"), M + pad, cy);
+        cy += 18;
+        ctx.strokeStyle = COLORS.divider;
+        ctx.beginPath(); ctx.moveTo(M + pad, cy - 12); ctx.lineTo(M + cardW - pad, cy - 12); ctx.stroke();
+        const barAreaH = 40, gap = 3;
+        const barW = Math.max(2, (rowsW - gap * (s.gameTrend.length - 1)) / s.gameTrend.length);
+        s.gameTrend.forEach((g, i) => {
+          const bh = Math.max(3, (g.wonPct / 100) * barAreaH);
+          const bx = M + pad + i * (barW + gap);
+          const by = cy + (barAreaH - bh);
+          ctx.fillStyle = g.wonPct >= 50 ? COLORS.good : COLORS.warn;
+          roundRect(ctx, bx, by, barW, bh, Math.min(2, barW / 2));
+          ctx.fill();
+        });
+        cy += barAreaH + 14;
+      }
 
       // BY COURT ZONE - a compact table; winners & unforced errors are bold and
       // colored so they stand out, forced errors stay small and muted.
@@ -286,6 +329,42 @@
         ctx.textAlign = "left";
         cy += rowH;
       });
+
+      // BY SHOT TYPE - same compact layout as the zone table, only shown for
+      // shot types the coach actually tagged during the match.
+      if (s.shotTypeStats && s.shotTypeStats.length) {
+        cy += 4;
+        sectionTitle(I18N.t("byShotType"), M + pad, cy);
+        cy += 18;
+        ctx.strokeStyle = COLORS.divider;
+        ctx.beginPath(); ctx.moveTo(M + pad, cy - 12); ctx.lineTo(M + cardW - pad, cy - 12); ctx.stroke();
+        ctx.font = "700 10px -apple-system, Segoe UI, Roboto, Arial";
+        ctx.fillStyle = COLORS.textMuted;
+        ctx.textAlign = "center";
+        ctx.fillText("W", zCol1, cy);
+        ctx.fillText("U.ERR", zCol2, cy);
+        ctx.fillText("F.ERR", zCol3, cy);
+        ctx.textAlign = "left";
+        cy += rowH;
+        const shotTypeLabel = { volley: I18N.t("volley"), smash: I18N.t("smash"), drop: I18N.t("dropShot"), slice: I18N.t("slice") };
+        s.shotTypeStats.forEach((z) => {
+          ctx.font = "13px -apple-system, Segoe UI, Roboto, Arial";
+          ctx.fillStyle = COLORS.textMuted;
+          ctx.fillText(shotTypeLabel[z.shotType], M + pad, cy);
+
+          ctx.textAlign = "center";
+          ctx.font = "800 15px -apple-system, Segoe UI, Roboto, Arial";
+          ctx.fillStyle = COLORS.good;
+          ctx.fillText(String(z.winners), zCol1, cy);
+          ctx.fillStyle = COLORS.warn;
+          ctx.fillText(String(z.unforcedErrors), zCol2, cy);
+          ctx.font = "12px -apple-system, Segoe UI, Roboto, Arial";
+          ctx.fillStyle = COLORS.textMuted;
+          ctx.fillText(String(z.forcedErrors), zCol3, cy);
+          ctx.textAlign = "left";
+          cy += rowH;
+        });
+      }
 
       y += h + 16;
     });
