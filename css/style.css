@@ -93,6 +93,23 @@ body {
 }
 .quickadd-row { display: flex; gap: 6px; margin: -4px 0 2px; }
 .quickadd-row input { flex: 1; padding: 9px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.95rem; }
+
+.photo-preview-row { display: flex; align-items: center; gap: 10px; margin: -4px 0 2px; }
+.photo-preview-row img { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border); }
+
+/* Player Stats filter panel (dark screen) */
+.filter-panel { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 12px; margin: 10px 0; }
+.filter-panel .filter-group-label:first-child { font-size: 0.85rem; font-weight: 700; color: white; margin-bottom: 10px; }
+.filter-row { display: flex; gap: 8px; margin-bottom: 10px; }
+.filter-row label { flex: 1; display: flex; flex-direction: column; gap: 4px; font-size: 0.72rem; color: rgba(255,255,255,0.55); }
+.filter-row input[type="date"] { padding: 8px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.06); color: white; font-size: 0.82rem; }
+.filter-group { margin-bottom: 10px; }
+.filter-group .filter-group-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.04em; color: rgba(255,255,255,0.5); margin-bottom: 6px; }
+.filter-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.filter-chip { padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.25); background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.85); font-size: 0.78rem; cursor: pointer; }
+.filter-chip.active { background: var(--accent-1); color: #1a1a1a; border-color: var(--accent-1); font-weight: 700; }
+.filter-panel .btn-ghost { color: white; border-color: rgba(255,255,255,0.25); }
+.filter-summary { font-size: 0.72rem; color: rgba(255,255,255,0.5); margin-top: 8px; }
 .form-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
 .form label.checkbox-line { flex-direction: row; gap: 8px; font-size: 0.95rem; color: var(--text); }
 .form .field-label { font-size: 0.85rem; color: var(--text-muted); margin-bottom: -4px; }
@@ -112,6 +129,7 @@ body {
 .home-menu-item .hmi-label { font-size: 0.85rem; font-weight: 600; }
 
 .single-action { margin-top: 12px; }
+#view-summary .single-action .btn-ghost, #view-player-stats .single-action .btn-ghost { color: white; border-color: rgba(255,255,255,0.25); }
 
 .about-content h3 { margin: 14px 0 4px; font-size: 0.95rem; color: var(--green-dark); }
 .about-content h3:first-child { margin-top: 0; }
@@ -125,6 +143,15 @@ body {
 .match-item:hover { border-color: var(--green); }
 .match-item .meta { font-size: 0.8rem; color: var(--text-muted); }
 .empty-hint { color: var(--text-muted); font-size: 0.9rem; padding: 8px 0; }
+
+.player-item { gap: 10px; }
+.player-item-info { flex: 1; min-width: 0; }
+.player-avatar {
+  width: 44px; height: 44px; border-radius: 50%; object-fit: cover; flex-shrink: 0;
+  background: var(--bg); border: 1px solid var(--border);
+}
+.player-avatar-flag { display: flex; align-items: center; justify-content: center; font-size: 1.4rem; }
+.player-stats-snapshot { color: var(--green); font-weight: 600; }
 
 /* Scoreboard */
 .scoreboard {

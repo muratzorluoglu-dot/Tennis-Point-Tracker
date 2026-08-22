@@ -79,6 +79,8 @@
   I18N.onChange(() => {
     populateSetFormatSelect();
     populateSurfaceSelect();
+    populateTournamentTypeSelect();
+    populateCountrySelect();
     syncPlayerNameUI();
     // re-render whichever screen is currently on view so dynamically-built HTML picks up the new language
     switch (currentViewName()) {
@@ -155,7 +157,7 @@
   function hydrateMatch(rec) {
     state.matchId = rec.id;
     state.matchMeta = {
-      tournament: rec.tournament, round: rec.round, club: rec.club, surface: rec.surface, city: rec.city, coach: rec.coach,
+      tournament: rec.tournament, tournamentType: rec.tournamentType, round: rec.round, club: rec.club, surface: rec.surface, city: rec.city, coach: rec.coach,
       createdAt: rec.createdAt, player1Id: rec.player1Id, player2Id: rec.player2Id,
     };
     state.trackedPlayers = rec.trackedPlayers && rec.trackedPlayers.length ? rec.trackedPlayers : [1, 2];
@@ -180,6 +182,7 @@
       createdAt: state.matchMeta.createdAt,
       updatedAt: new Date().toISOString(),
       tournament: state.matchMeta.tournament,
+      tournamentType: state.matchMeta.tournamentType,
       round: state.matchMeta.round,
       club: state.matchMeta.club,
       surface: state.matchMeta.surface,
@@ -218,6 +221,60 @@
     sel.value = prevValue;
   }
   populateSurfaceSelect();
+
+  const TOURNAMENT_TYPES = ["itf", "tennis_europe", "i_kort", "challenger", "atp", "wta", "other"];
+  function populateTournamentTypeSelect() {
+    const sel = $("#f-tournament-type");
+    const prevValue = sel.value;
+    sel.innerHTML = `<option value="">${t("optional")}</option>` +
+      TOURNAMENT_TYPES.map(id => `<option value="${id}">${t("tType_" + id)}</option>`).join("");
+    sel.value = prevValue;
+  }
+  populateTournamentTypeSelect();
+
+  // [code, English name, Turkish name] - flag emoji is derived from the ISO
+  // code at render time (no image assets needed).
+  const COUNTRIES = [
+    ["TR","Turkey","Türkiye"], ["US","United States","ABD"], ["GB","United Kingdom","İngiltere"],
+    ["FR","France","Fransa"], ["DE","Germany","Almanya"], ["ES","Spain","İspanya"], ["IT","Italy","İtalya"],
+    ["RU","Russia","Rusya"], ["RS","Serbia","Sırbistan"], ["CH","Switzerland","İsviçre"], ["AR","Argentina","Arjantin"],
+    ["BR","Brazil","Brezilya"], ["AU","Australia","Avustralya"], ["CA","Canada","Kanada"], ["JP","Japan","Japonya"],
+    ["CN","China","Çin"], ["KR","South Korea","Güney Kore"], ["IN","India","Hindistan"], ["NL","Netherlands","Hollanda"],
+    ["BE","Belgium","Belçika"], ["SE","Sweden","İsveç"], ["NO","Norway","Norveç"], ["DK","Denmark","Danimarka"],
+    ["FI","Finland","Finlandiya"], ["PL","Poland","Polonya"], ["CZ","Czechia","Çekya"], ["SK","Slovakia","Slovakya"],
+    ["AT","Austria","Avusturya"], ["HU","Hungary","Macaristan"], ["RO","Romania","Romanya"], ["BG","Bulgaria","Bulgaristan"],
+    ["GR","Greece","Yunanistan"], ["PT","Portugal","Portekiz"], ["UA","Ukraine","Ukrayna"], ["HR","Croatia","Hırvatistan"],
+    ["SI","Slovenia","Slovenya"], ["EE","Estonia","Estonya"], ["LV","Latvia","Letonya"], ["LT","Lithuania","Litvanya"],
+    ["IL","Israel","İsrail"], ["EG","Egypt","Mısır"], ["MA","Morocco","Fas"], ["TN","Tunisia","Tunus"],
+    ["ZA","South Africa","Güney Afrika"], ["NG","Nigeria","Nijerya"], ["KE","Kenya","Kenya"], ["MX","Mexico","Meksika"],
+    ["CL","Chile","Şili"], ["CO","Colombia","Kolombiya"], ["PE","Peru","Peru"], ["VE","Venezuela","Venezuela"],
+    ["EC","Ecuador","Ekvador"], ["UY","Uruguay","Uruguay"], ["PY","Paraguay","Paraguay"], ["BO","Bolivia","Bolivya"],
+    ["CR","Costa Rica","Kosta Rika"], ["PA","Panama","Panama"], ["DO","Dominican Republic","Dominik Cumhuriyeti"],
+    ["JM","Jamaica","Jamaika"], ["CU","Cuba","Küba"], ["TH","Thailand","Tayland"], ["VN","Vietnam","Vietnam"],
+    ["PH","Philippines","Filipinler"], ["ID","Indonesia","Endonezya"], ["MY","Malaysia","Malezya"], ["SG","Singapore","Singapur"],
+    ["NZ","New Zealand","Yeni Zelanda"], ["IE","Ireland","İrlanda"], ["IS","Iceland","İzlanda"], ["LU","Luxembourg","Lüksemburg"],
+    ["MC","Monaco","Monako"], ["CY","Cyprus","Kıbrıs"], ["GE","Georgia","Gürcistan"], ["AZ","Azerbaijan","Azerbaycan"],
+    ["KZ","Kazakhstan","Kazakistan"], ["UZ","Uzbekistan","Özbekistan"], ["QA","Qatar","Katar"], ["AE","United Arab Emirates","Birleşik Arap Emirlikleri"],
+    ["SA","Saudi Arabia","Suudi Arabistan"], ["KW","Kuwait","Kuveyt"], ["JO","Jordan","Ürdün"], ["LB","Lebanon","Lübnan"],
+    ["PK","Pakistan","Pakistan"], ["BD","Bangladesh","Bangladeş"], ["LK","Sri Lanka","Sri Lanka"],
+  ];
+  function countryName(code) {
+    const c = COUNTRIES.find(x => x[0] === code);
+    if (!c) return code || "";
+    return I18N.getLang() === "tr" ? c[2] : c[1];
+  }
+  function flagEmoji(code) {
+    if (!code || code.length !== 2) return "";
+    return String.fromCodePoint(...code.toUpperCase().split("").map(ch => 127397 + ch.charCodeAt(0)));
+  }
+  function populateCountrySelect() {
+    const sel = $("#f-player-country");
+    const prevValue = sel.value;
+    const sorted = COUNTRIES.slice().sort((a, b) => countryName(a[0]).localeCompare(countryName(b[0]), I18N.getLang()));
+    sel.innerHTML = `<option value="">${t("selectPlayerPlaceholder")}</option>` +
+      sorted.map(c => `<option value="${c[0]}">${flagEmoji(c[0])} ${countryName(c[0])}</option>`).join("");
+    sel.value = prevValue;
+  }
 
   // Player <select>s are populated from the roster (Players store), plus a
   // trailing "+ Add New Player" option that reveals an inline quick-add row
@@ -311,6 +368,7 @@
     state.matchId = uid();
     state.matchMeta = {
       tournament: $("#f-tournament").value.trim(),
+      tournamentType: $("#f-tournament-type").value,
       round: $("#f-round").value.trim(),
       club: $("#f-club").value.trim(),
       surface: $("#f-surface").value,
@@ -911,6 +969,7 @@
       [t("time"), start ? start.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : null],
       [t("duration"), formatDuration(m.matchStartTime, m.matchEndTime)],
       [t("tournament"), meta.tournament],
+      [t("tournamentType"), meta.tournamentType ? t("tType_" + meta.tournamentType) : null],
       [t("round"), meta.round],
       [t("club"), meta.club],
       [t("surface"), meta.surface ? t("surface_" + meta.surface) : null],
@@ -965,7 +1024,7 @@
     const m = state.match;
     const meta = state.matchMeta || {};
     const start = m.matchStartTime ? new Date(m.matchStartTime) : new Date();
-    const parts = [meta.tournament, meta.round, meta.club, meta.surface ? t("surface_" + meta.surface) : null, meta.city, meta.coach ? `${t("coach")}: ${meta.coach}` : null].filter(Boolean);
+    const parts = [meta.tournament, meta.tournamentType ? t("tType_" + meta.tournamentType) : null, meta.round, meta.club, meta.surface ? t("surface_" + meta.surface) : null, meta.city, meta.coach ? `${t("coach")}: ${meta.coach}` : null].filter(Boolean);
     return {
       title: `${m.player1} ${t("vs")} ${m.player2}`,
       subtitle: [start.toLocaleDateString(), ...parts].join(" · "),
@@ -1019,20 +1078,72 @@
   // ---------- PLAYERS (roster: coach's own players + opponents) ----------
   const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1);
   const PLAYER_HANDS = ["right", "left"];
+  const PLAYER_BACKHANDS = ["one", "two"];
   const PLAYER_GENDERS = ["male", "female"];
 
   function populatePlayerFieldSelects() {
     $("#f-player-hand").innerHTML = `<option value="">${t("optional")}</option>` +
       PLAYER_HANDS.map(h => `<option value="${h}">${t("playerHand" + capitalize(h))}</option>`).join("");
+    $("#f-player-backhand").innerHTML = `<option value="">${t("optional")}</option>` +
+      PLAYER_BACKHANDS.map(b => `<option value="${b}">${t("playerBackhand" + capitalize(b))}</option>`).join("");
     $("#f-player-gender").innerHTML = `<option value="">${t("optional")}</option>` +
       PLAYER_GENDERS.map(g => `<option value="${g}">${t("playerGender" + capitalize(g))}</option>`).join("");
+    populateCountrySelect();
   }
   populatePlayerFieldSelects();
+
+  // Age category is a rough, informational bucket only (not tied to any
+  // federation's official cutoff rules) - just enough for an at-a-glance read.
+  function ageCategoryFor(birthYear) {
+    if (!birthYear) return null;
+    const age = new Date().getFullYear() - birthYear;
+    if (age <= 10) return "U10";
+    if (age <= 12) return "U12";
+    if (age <= 14) return "U14";
+    if (age <= 16) return "U16";
+    if (age <= 18) return "U18";
+    return t("senior");
+  }
+
+  // Photos are downscaled client-side before being stored as a data URL, so
+  // a roster of many players doesn't blow through localStorage's ~5-10MB cap.
+  let pendingPhotoDataUrl = null; // null = no change; "" = explicitly removed
+  function showPhotoPreview(dataUrl) {
+    $("#photo-preview-img").src = dataUrl;
+    $("#photo-preview-row").classList.remove("hidden");
+  }
+  $("#f-player-photo").addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => {
+        const maxSize = 300;
+        const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
+        const w = Math.round(img.width * scale), h = Math.round(img.height * scale);
+        const canvas = document.createElement("canvas");
+        canvas.width = w; canvas.height = h;
+        canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+        pendingPhotoDataUrl = canvas.toDataURL("image/jpeg", 0.82);
+        showPhotoPreview(pendingPhotoDataUrl);
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+  $("#btn-photo-remove").addEventListener("click", () => {
+    pendingPhotoDataUrl = "";
+    $("#f-player-photo").value = "";
+    $("#photo-preview-row").classList.add("hidden");
+  });
 
   function resetPlayerForm() {
     $("#form-player").reset();
     $("#f-player-id").value = "";
     $("#btn-player-cancel-edit").classList.add("hidden");
+    pendingPhotoDataUrl = null;
+    $("#photo-preview-row").classList.add("hidden");
   }
   $("#btn-player-cancel-edit").addEventListener("click", resetPlayerForm);
 
@@ -1041,11 +1152,22 @@
     if (!p) return;
     $("#f-player-id").value = p.id;
     $("#f-player-name").value = p.name;
+    $("#f-player-birthyear").value = p.birthYear || "";
+    $("#f-player-country").value = p.country || "";
     $("#f-player-club").value = p.club || "";
-    $("#f-player-age").value = p.age || "";
     $("#f-player-hand").value = p.hand || "";
+    $("#f-player-backhand").value = p.backhand || "";
     $("#f-player-gender").value = p.gender || "";
     $("#f-player-notes").value = p.notes || "";
+    $("#f-player-itf-rank").value = p.itfRank || "";
+    $("#f-player-itf-points").value = p.itfPoints || "";
+    $("#f-player-te-rank").value = p.teRank || "";
+    $("#f-player-te-points").value = p.tePoints || "";
+    $("#f-player-utr").value = p.utrRating || "";
+    $("#f-player-ikort-rank").value = p.ikortRank || "";
+    $("#f-player-ikort-points").value = p.ikortPoints || "";
+    pendingPhotoDataUrl = null;
+    if (p.photo) showPhotoPreview(p.photo); else $("#photo-preview-row").classList.add("hidden");
     $("#btn-player-cancel-edit").classList.remove("hidden");
   }
 
@@ -1054,12 +1176,23 @@
     const players = Players.loadAll();
     if (!players.length) { list.innerHTML = `<div class="empty-hint">${t("noPlayersYet")}</div>`; return; }
     list.innerHTML = players.map(p => {
-      const metaParts = [p.club, p.age ? String(p.age) : null, p.hand ? t("playerHand" + capitalize(p.hand)) : null].filter(Boolean);
+      const flag = flagEmoji(p.country);
+      const cat = ageCategoryFor(p.birthYear);
+      const metaParts = [p.club, cat, p.hand ? t("playerHand" + capitalize(p.hand)) : null].filter(Boolean);
+      const entries = computePlayerMatchEntries(p.id);
+      const statsLine = entries.length
+        ? t("statsSnapshot", { n: entries.length, pct: Math.round(computeAggregateStats(entries).pointsWonPct) })
+        : "";
+      const avatar = p.photo
+        ? `<img class="player-avatar" src="${p.photo}" alt="">`
+        : `<div class="player-avatar player-avatar-flag">${flag || "👤"}</div>`;
       return `
-        <div class="match-item" data-id="${p.id}">
-          <div>
-            <div><strong>${escapeHtml(p.name)}</strong></div>
+        <div class="match-item player-item" data-id="${p.id}">
+          ${avatar}
+          <div class="player-item-info">
+            <div><strong>${escapeHtml(p.name)}</strong>${flag && p.photo ? ` ${flag}` : ""}</div>
             ${metaParts.length ? `<div class="meta">${metaParts.map(escapeHtml).join(" · ")}</div>` : ""}
+            ${statsLine ? `<div class="meta player-stats-snapshot">${statsLine}</div>` : ""}
           </div>
           <button class="btn btn-ghost btn-delete" data-del-player="${p.id}">${t("delete")}</button>
         </div>`;
@@ -1084,17 +1217,27 @@
   $("#form-player").addEventListener("submit", (e) => {
     e.preventDefault();
     const name = $("#f-player-name").value.trim();
-    if (!name) return;
+    const birthYear = $("#f-player-birthyear").value ? parseInt($("#f-player-birthyear").value, 10) : null;
+    const country = $("#f-player-country").value;
+    if (!name || !birthYear || !country) { alert(t("playerRequiredFields")); return; }
     const existingId = $("#f-player-id").value;
     const existing = existingId ? Players.get(existingId) : null;
+    const photo = pendingPhotoDataUrl !== null ? (pendingPhotoDataUrl || null) : (existing ? existing.photo : null);
     Players.upsert({
       id: existingId || uid(),
-      name,
+      name, birthYear, country, photo,
       club: $("#f-player-club").value.trim(),
-      age: $("#f-player-age").value ? parseInt($("#f-player-age").value, 10) : null,
       hand: $("#f-player-hand").value,
+      backhand: $("#f-player-backhand").value,
       gender: $("#f-player-gender").value,
       notes: $("#f-player-notes").value.trim(),
+      itfRank: $("#f-player-itf-rank").value.trim(),
+      itfPoints: $("#f-player-itf-points").value.trim(),
+      teRank: $("#f-player-te-rank").value.trim(),
+      tePoints: $("#f-player-te-points").value.trim(),
+      utrRating: $("#f-player-utr").value.trim(),
+      ikortRank: $("#f-player-ikort-rank").value.trim(),
+      ikortPoints: $("#f-player-ikort-points").value.trim(),
       createdAt: existing ? existing.createdAt : new Date().toISOString(),
     });
     resetPlayerForm();
@@ -1116,9 +1259,25 @@
   // ---------- PLAYER STATISTICS (career/aggregate across all of a player's matches) ----------
   let lastPlayerStatsData = null;
 
-  function computePlayerMatchEntries(playerId) {
+  // filters: { dateFrom, dateTo, surfaces: Set<string>, types: Set<string> } | null
+  // Across categories a match must satisfy all of them (AND); within a
+  // category (e.g. two surfaces picked) matching any one is enough (OR).
+  function matchPassesFilters(rec, filters) {
+    if (!filters) return true;
+    if (filters.dateFrom && new Date(rec.createdAt) < new Date(filters.dateFrom)) return false;
+    if (filters.dateTo) {
+      const to = new Date(filters.dateTo);
+      to.setHours(23, 59, 59, 999);
+      if (new Date(rec.createdAt) > to) return false;
+    }
+    if (filters.surfaces && filters.surfaces.size && !filters.surfaces.has(rec.surface)) return false;
+    if (filters.types && filters.types.size && !filters.types.has(rec.tournamentType)) return false;
+    return true;
+  }
+
+  function computePlayerMatchEntries(playerId, filters) {
     return Storage.loadAll()
-      .filter(rec => rec.player1Id === playerId || rec.player2Id === playerId)
+      .filter(rec => (rec.player1Id === playerId || rec.player2Id === playerId) && matchPassesFilters(rec, filters))
       .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
       .map(rec => ({ sets: rec.match.sets, pointLog: rec.match.pointLog, player: rec.player1Id === playerId ? 1 : 2 }));
   }
@@ -1127,8 +1286,8 @@
   // surfaces, decided in how many sets, tiebreak record, and time on court.
   // Lives here rather than in scoring.js because it needs match-record
   // metadata (surface, start/end time) that TennisMatch itself doesn't carry.
-  function computeCareerStats(playerId) {
-    const recs = Storage.loadAll().filter(rec => rec.player1Id === playerId || rec.player2Id === playerId);
+  function computeCareerStats(playerId, filters) {
+    const recs = Storage.loadAll().filter(rec => (rec.player1Id === playerId || rec.player2Id === playerId) && matchPassesFilters(rec, filters));
     const finished = recs.filter(rec => rec.finished);
     const slotOf = (rec) => (rec.player1Id === playerId ? 1 : 2);
 
@@ -1238,10 +1397,53 @@
       </div>`;
   }
 
-  // `reset` clears the selection when the coach navigates into this screen
-  // fresh, so they always actively pick who they want stats for instead of
-  // silently seeing whoever was picked last time. Language-switch re-renders
-  // pass reset=false to keep whatever's currently on screen.
+  // Filter state for the Player Stats screen: date range is a single window;
+  // surfaces/types are sets (checking several within one category is OR,
+  // e.g. Hard-or-Clay), and the categories combine with AND against each
+  // other and the date range.
+  let playerStatsFilters = { dateFrom: "", dateTo: "", surfaces: new Set(), types: new Set() };
+  function resetPlayerStatsFilters() {
+    playerStatsFilters = { dateFrom: "", dateTo: "", surfaces: new Set(), types: new Set() };
+    $("#f-filter-date-from").value = "";
+    $("#f-filter-date-to").value = "";
+  }
+  function renderFilterChips() {
+    $("#filter-surface-chips").innerHTML = SURFACES.map(s => `
+      <button type="button" class="filter-chip${playerStatsFilters.surfaces.has(s) ? " active" : ""}" data-surface="${s}">${t("surface_" + s)}</button>`).join("");
+    $("#filter-type-chips").innerHTML = TOURNAMENT_TYPES.map(ty => `
+      <button type="button" class="filter-chip${playerStatsFilters.types.has(ty) ? " active" : ""}" data-type="${ty}">${t("tType_" + ty)}</button>`).join("");
+  }
+  $("#pstats-filters").addEventListener("click", (e) => {
+    const chip = e.target.closest(".filter-chip");
+    if (!chip) return;
+    if (chip.dataset.surface) {
+      const s = chip.dataset.surface;
+      if (playerStatsFilters.surfaces.has(s)) playerStatsFilters.surfaces.delete(s); else playerStatsFilters.surfaces.add(s);
+    } else if (chip.dataset.type) {
+      const ty = chip.dataset.type;
+      if (playerStatsFilters.types.has(ty)) playerStatsFilters.types.delete(ty); else playerStatsFilters.types.add(ty);
+    }
+    renderFilterChips();
+    renderPlayerStatsContent($("#f-player-stats-select").value);
+  });
+  $("#f-filter-date-from").addEventListener("change", (e) => {
+    playerStatsFilters.dateFrom = e.target.value;
+    renderPlayerStatsContent($("#f-player-stats-select").value);
+  });
+  $("#f-filter-date-to").addEventListener("change", (e) => {
+    playerStatsFilters.dateTo = e.target.value;
+    renderPlayerStatsContent($("#f-player-stats-select").value);
+  });
+  $("#btn-filters-clear").addEventListener("click", () => {
+    resetPlayerStatsFilters();
+    renderFilterChips();
+    renderPlayerStatsContent($("#f-player-stats-select").value);
+  });
+
+  // `reset` clears the selection (and filters) when the coach navigates into
+  // this screen fresh, so they always actively pick who they want stats for
+  // instead of silently seeing whoever was selected last time. Language-
+  // switch re-renders pass reset=false to keep whatever's currently on screen.
   function renderPlayerStatsSelect(reset = false) {
     const sel = $("#f-player-stats-select");
     const prevValue = reset ? "" : sel.value;
@@ -1249,6 +1451,8 @@
     sel.innerHTML = `<option value="">${t("selectPlayerPlaceholder")}</option>` +
       players.map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join("");
     sel.value = prevValue;
+    if (reset) resetPlayerStatsFilters();
+    renderFilterChips();
     renderPlayerStatsContent(sel.value);
   }
   $("#f-player-stats-select").addEventListener("change", (e) => renderPlayerStatsContent(e.target.value));
@@ -1258,16 +1462,28 @@
     $("#player-stats-ai-wrap").innerHTML = "";
     const content = $("#player-stats-content");
     const actions = $("#player-stats-actions");
+    const filterPanel = $("#pstats-filters");
     if (!playerId) {
       content.innerHTML = `<div class="empty-hint">${t("selectPlayerHint")}</div>`;
       actions.classList.add("hidden");
+      filterPanel.classList.add("hidden");
       lastPlayerStatsData = null;
       return;
     }
+    filterPanel.classList.remove("hidden");
     const player = Players.get(playerId);
-    const entries = computePlayerMatchEntries(playerId);
-    if (!entries.length) {
+    const totalEntries = computePlayerMatchEntries(playerId);
+    if (!totalEntries.length) {
       content.innerHTML = `<div class="empty-hint">${t("noMatchesForPlayer")}</div>`;
+      actions.classList.add("hidden");
+      $("#filter-summary").textContent = "";
+      lastPlayerStatsData = null;
+      return;
+    }
+    const entries = computePlayerMatchEntries(playerId, playerStatsFilters);
+    $("#filter-summary").textContent = t("showingMatches", { shown: entries.length, total: totalEntries.length });
+    if (!entries.length) {
+      content.innerHTML = `<div class="empty-hint">${t("noMatchesForFilters")}</div>`;
       actions.classList.add("hidden");
       lastPlayerStatsData = null;
       return;
@@ -1276,7 +1492,7 @@
     agg.gameTrend = computeMatchTrend(entries); // per-match trend, not per-game (game numbers collide across matches)
     const title = t("matchesCount", { n: entries.length });
     const card = { playerName: player.name, title, scoreLabel: null, s: agg };
-    const career = computeCareerStats(playerId);
+    const career = computeCareerStats(playerId, playerStatsFilters);
     content.innerHTML = careerStatsPanel(career, player.name) + summaryCard(card.playerName, card.title, card.scoreLabel, card.s, false, "matchTrend");
     actions.classList.remove("hidden");
     lastPlayerStatsData = { header: { title: player.name, subtitle: title }, cards: [card] };
