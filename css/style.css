@@ -145,6 +145,7 @@ body {
 .empty-hint { color: var(--text-muted); font-size: 0.9rem; padding: 8px 0; }
 
 .player-item { gap: 10px; }
+.player-item-actions { display: flex; gap: 6px; flex-shrink: 0; }
 .player-item-info { flex: 1; min-width: 0; }
 .player-avatar {
   width: 44px; height: 44px; border-radius: 50%; object-fit: cover; flex-shrink: 0;

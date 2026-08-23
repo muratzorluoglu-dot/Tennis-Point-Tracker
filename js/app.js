@@ -1169,6 +1169,9 @@
     pendingPhotoDataUrl = null;
     if (p.photo) showPhotoPreview(p.photo); else $("#photo-preview-row").classList.add("hidden");
     $("#btn-player-cancel-edit").classList.remove("hidden");
+    // The form sits above the list, so scroll up to make it obvious the form
+    // just filled in with this player's data (especially with a long roster).
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   function renderPlayersList() {
@@ -1194,12 +1197,21 @@
             ${metaParts.length ? `<div class="meta">${metaParts.map(escapeHtml).join(" · ")}</div>` : ""}
             ${statsLine ? `<div class="meta player-stats-snapshot">${statsLine}</div>` : ""}
           </div>
-          <button class="btn btn-ghost btn-delete" data-del-player="${p.id}">${t("delete")}</button>
+          <div class="player-item-actions">
+            <button class="btn btn-ghost btn-sm" data-edit-player="${p.id}">${t("edit")}</button>
+            <button class="btn btn-ghost btn-sm btn-delete" data-del-player="${p.id}">${t("delete")}</button>
+          </div>
         </div>`;
     }).join("");
+    list.querySelectorAll("[data-edit-player]").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        startEditPlayer(btn.dataset.editPlayer);
+      });
+    });
     list.querySelectorAll(".match-item").forEach(el => {
       el.addEventListener("click", (e) => {
-        if (e.target.closest(".btn-delete")) return;
+        if (e.target.closest(".player-item-actions")) return;
         startEditPlayer(el.dataset.id);
       });
     });
