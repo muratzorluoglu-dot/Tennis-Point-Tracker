@@ -134,6 +134,9 @@ body {
 .about-content h3 { margin: 14px 0 4px; font-size: 0.95rem; color: var(--green-dark); }
 .about-content h3:first-child { margin-top: 0; }
 .about-content p { margin: 0 0 8px; font-size: 0.9rem; line-height: 1.5; color: var(--text); }
+.backup-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.btn-file-label { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
+#import-result { margin-top: 8px; }
 
 .match-list { display: flex; flex-direction: column; gap: 8px; }
 .match-item {

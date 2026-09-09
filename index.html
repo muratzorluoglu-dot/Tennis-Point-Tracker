@@ -58,6 +58,18 @@
       <h3 data-i18n="aboutWhyTitle">Why it exists</h3>
       <p data-i18n="aboutWhyBody">...</p>
     </div>
+    <div class="about-content card">
+      <h3 data-i18n="dataBackupTitle">Backup &amp; Transfer</h3>
+      <p data-i18n="dataBackupBody">...</p>
+      <div class="backup-actions">
+        <button type="button" class="btn btn-primary" id="btn-export-data">⬇️ <span data-i18n="exportData">Export Backup</span></button>
+        <label class="btn btn-ghost btn-file-label">
+          ⬆️ <span data-i18n="importData">Import Backup</span>
+          <input type="file" accept="application/json" id="f-import-data" class="hidden">
+        </label>
+      </div>
+      <div id="import-result" class="meta"></div>
+    </div>
     <div class="single-action">
       <button type="button" class="btn btn-ghost btn-large" data-nav="home" data-i18n="backToMenu">Back to Menu</button>
     </div>

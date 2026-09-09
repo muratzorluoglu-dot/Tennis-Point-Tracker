@@ -25,6 +25,13 @@ const I18N = (function () {
       aboutWhyTitle: "Why it exists",
       aboutWhyBody: "Paper scoresheets don't give you stats, and video-analysis tools are built for the pro tour. This app is built for the coach on court: fast enough to use point-by-point during a real match, detailed enough to show real progress over time.",
 
+      dataBackupTitle: "Backup & Transfer",
+      dataBackupBody: "There's no cloud sync yet, so your matches and players stay on this device only. To move them to another device (e.g. phone to computer): tap Export Backup here, send yourself that file (email, cloud drive, AirDrop/Nearby Share...), open this same page on the other device, then use Import Backup to bring it in.",
+      exportData: "Export Backup",
+      importData: "Import Backup",
+      importSuccess: "Imported {matches} matches and {players} players.",
+      importError: "This file doesn't look like a valid backup.",
+
       playerFullName: "Full Name",
       playerAge: "Age",
       playerHand: "Dominant Hand",
@@ -323,6 +330,13 @@ const I18N = (function () {
       aboutWhatBody: "Tenis Point Tracker, bir koçun sahada maçı sayı sayı skorlamasını sağlar — servis türü, sonuç, vuruş türü ve kort bölgesi — ve bunu saniyeler içinde detaylı canlı istatistiklere, koçluk değerlendirmesine ve paylaşılabilir raporlara dönüştürür.",
       aboutWhyTitle: "Neden var",
       aboutWhyBody: "Kağıt skor kartı istatistik vermez, video analiz araçları ise profesyonel tur için tasarlanmıştır. Bu uygulama sahadaki koç için yapıldı: gerçek bir maçta sayı sayı kullanılabilecek kadar hızlı, zaman içindeki gerçek gelişimi gösterecek kadar detaylı.",
+
+      dataBackupTitle: "Yedekleme ve Aktarma",
+      dataBackupBody: "Henüz bulut senkronu yok, bu yüzden maçların ve oyuncuların sadece bu cihazda duruyor. Başka bir cihaza taşımak için (örn. telefondan bilgisayara): buradan Yedek Al'a bas, çıkan dosyayı kendine gönder (e-posta, bulut disk, AirDrop/Nearby Share vb.), diğer cihazda aynı sayfayı aç, sonra Yedek Yükle ile içeri al.",
+      exportData: "Yedek Al",
+      importData: "Yedek Yükle",
+      importSuccess: "{matches} maç ve {players} oyuncu içe aktarıldı.",
+      importError: "Bu dosya geçerli bir yedek dosyası gibi görünmüyor.",
 
       playerFullName: "Ad Soyad",
       playerAge: "Yaş",

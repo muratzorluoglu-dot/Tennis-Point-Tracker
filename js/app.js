@@ -1540,6 +1540,52 @@
     }
   });
 
+  // ---------- DATA BACKUP / TRANSFER ----------
+  // There's no cloud sync (no backend at all - see storage.js), so moving
+  // data between a coach's own devices is a manual export-file/import-file
+  // round trip: download the JSON on one device, send it to yourself
+  // however's convenient, then import it on the other device.
+  $("#btn-export-data").addEventListener("click", () => {
+    const payload = {
+      appVersion: "tenis-tracker",
+      exportedAt: new Date().toISOString(),
+      matches: Storage.loadAll(),
+      players: Players.loadAll(),
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `tenis-tracker-yedek-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  });
+
+  $("#f-import-data").addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const resultEl = $("#import-result");
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const data = JSON.parse(ev.target.result);
+        if (!data || (!Array.isArray(data.matches) && !Array.isArray(data.players))) throw new Error("invalid backup shape");
+        // Upsert by id: safe to import repeatedly, and re-importing an
+        // updated backup from the same device just refreshes those records.
+        (data.players || []).forEach((p) => Players.upsert(p));
+        (data.matches || []).forEach((m) => Storage.upsert(m));
+        resultEl.textContent = t("importSuccess", { matches: (data.matches || []).length, players: (data.players || []).length });
+        renderHome();
+      } catch (err) {
+        resultEl.textContent = t("importError");
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = ""; // allow importing the same filename again later
+  });
+
   // ---------- init ----------
   I18N.applyStatic();
   populateSetFormatSelect();
