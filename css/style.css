@@ -138,6 +138,41 @@ body {
 .btn-file-label { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
 #import-result { margin-top: 8px; }
 
+.guide-intro { font-size: 0.9rem; color: var(--text-muted); margin: 0 0 10px; }
+.guide-accordion { display: flex; flex-direction: column; gap: 8px; }
+.guide-item { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+.guide-item summary {
+  list-style: none; cursor: pointer; padding: 10px 14px; font-weight: 600; font-size: 0.88rem;
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  background: #fafbfa; color: var(--text);
+}
+.guide-item summary::-webkit-details-marker { display: none; }
+.guide-item summary::after { content: "+"; color: var(--green); font-weight: 700; font-size: 1.05rem; flex-shrink: 0; }
+.guide-item[open] summary::after { content: "\2013"; }
+.guide-item[open] summary { border-bottom: 1px solid var(--border); }
+.guide-body { padding: 11px 14px 14px; font-size: 0.86rem; line-height: 1.55; color: var(--text); }
+.guide-body p { margin: 0 0 8px; }
+.guide-body p:last-child { margin-bottom: 0; }
+.guide-body ul, .guide-body ol { margin: 6px 0; padding-left: 1.2em; }
+.guide-body li { margin: 3px 0; }
+.guide-body em { color: var(--amber); font-style: normal; font-size: 0.78em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; }
+
+.guide-mock {
+  background: linear-gradient(165deg, #123420 0%, #0c2116 55%, #071108 100%);
+  border-radius: 10px; padding: 12px 13px 14px; margin-top: 10px; color: #eef3ec;
+}
+.guide-mock .gm-label { font-size: 0.66rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--accent-1); margin-bottom: 9px; }
+.guide-mock .gm-row { margin: 9px 0; }
+.guide-mock .gm-row .gm-labels { display: flex; justify-content: space-between; font-size: 0.72rem; margin-bottom: 4px; color: #cfe0d4; }
+.guide-mock .gm-row .gm-labels b { color: #fff; font-size: 0.74rem; }
+.guide-mock .gm-bar { height: 6px; border-radius: 999px; background: rgba(255,255,255,0.12); overflow: hidden; display: flex; }
+.guide-mock .gm-bar span { display: block; height: 100%; background: #52c17e; }
+.guide-mock .gm-bar span.b { background: rgba(255,255,255,0.28); }
+.guide-mock .gm-tiles { display: flex; gap: 6px; margin-bottom: 10px; }
+.guide-mock .gm-tile { flex: 1; background: rgba(255,255,255,0.07); border-radius: 8px; padding: 7px 4px; text-align: center; }
+.guide-mock .gm-tile b { display: block; color: var(--accent-1); font-size: 0.92rem; }
+.guide-mock .gm-tile small { display: block; font-size: 0.58rem; color: #93a89a; text-transform: uppercase; letter-spacing: 0.02em; margin-top: 2px; }
+
 .match-list { display: flex; flex-direction: column; gap: 8px; }
 .match-item {
   background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px;
