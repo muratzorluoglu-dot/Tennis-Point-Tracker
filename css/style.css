@@ -233,7 +233,7 @@ body {
 .outcome-stack { flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 0; overflow: hidden; }
 .btn-outcome {
   flex: 1; border: none; border-radius: 10px; color: white; font-weight: 700;
-  font-size: 0.78rem; padding: 8px 6px; text-align: center; min-width: 0;
+  font-size: 0.8rem; padding: 13px 6px; text-align: center; min-width: 0;
   display: flex; align-items: center; justify-content: center;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
@@ -243,7 +243,7 @@ body {
 .btn-outcome-unforced { background: var(--red); }
 
 /* Rally tap counter: a tall, square, thumb-friendly button for counting shots live as the point happens */
-.rally-tap-col { display: flex; flex-direction: column; gap: 6px; width: 140px; flex: 0 0 140px; }
+.rally-tap-col { display: flex; flex-direction: column; gap: 6px; width: 100px; flex: 0 0 100px; }
 .btn-tap-square {
   flex: 1; background: var(--green); color: white; font-weight: 800;
   border-radius: 12px; display: flex; flex-direction: column; align-items: center;
