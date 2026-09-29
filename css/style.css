@@ -230,11 +230,12 @@ body {
 /* Outcome (Winner/Forced/Unforced) stacked to the left of a square rally-tap
    counter, so both can be tapped from the same spot as a point plays out. */
 .rally-outcome-row { display: flex; gap: 8px; align-items: stretch; margin-bottom: 6px; }
-.outcome-stack { flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.outcome-stack { flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 0; overflow: hidden; }
 .btn-outcome {
   flex: 1; border: none; border-radius: 10px; color: white; font-weight: 700;
-  font-size: 0.85rem; padding: 8px 10px; text-align: center;
+  font-size: 0.78rem; padding: 8px 6px; text-align: center; min-width: 0;
   display: flex; align-items: center; justify-content: center;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .btn-outcome.active { box-shadow: inset 0 0 0 3px var(--accent-1); filter: brightness(0.92); }
 .btn-outcome-winner { background: var(--green); }
@@ -242,13 +243,13 @@ body {
 .btn-outcome-unforced { background: var(--red); }
 
 /* Rally tap counter: a tall, square, thumb-friendly button for counting shots live as the point happens */
-.rally-tap-col { display: flex; flex-direction: column; gap: 6px; width: 100px; flex-shrink: 0; }
+.rally-tap-col { display: flex; flex-direction: column; gap: 6px; width: 140px; flex: 0 0 140px; }
 .btn-tap-square {
   flex: 1; background: var(--green); color: white; font-weight: 800;
   border-radius: 12px; display: flex; flex-direction: column; align-items: center;
-  justify-content: center; gap: 2px; font-size: 0.7rem;
+  justify-content: center; gap: 2px; font-size: 0.75rem;
 }
-.btn-tap-square #rally-tap-count { font-size: 1.7rem; font-weight: 800; line-height: 1; }
+.btn-tap-square #rally-tap-count { font-size: 2.1rem; font-weight: 800; line-height: 1; }
 .btn-tap-square.active { background: var(--green-dark); box-shadow: inset 0 0 0 3px var(--accent-1); }
 .btn-tap-reset {
   flex-shrink: 0; height: 32px; width: 100%; border: 1px solid var(--border); background: white;
