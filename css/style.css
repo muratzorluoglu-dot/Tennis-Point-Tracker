@@ -227,17 +227,32 @@ body {
 .step-title-sm { font-size: 0.64rem; color: var(--text-muted); margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.04em; }
 .checkbox-line { display: flex; align-items: center; gap: 6px; font-size: 0.95rem; }
 
-/* Rally tap counter: a wide, thumb-friendly button for counting shots live as the point happens */
-.rally-tap-row { display: flex; gap: 6px; margin-bottom: 6px; }
-.btn-tap {
-  flex: 1; background: var(--green); color: white; font-weight: 800; font-size: 1.15rem;
-  padding: 18px 12px; border-radius: 12px; min-height: 58px;
+/* Outcome (Winner/Forced/Unforced) stacked to the left of a square rally-tap
+   counter, so both can be tapped from the same spot as a point plays out. */
+.rally-outcome-row { display: flex; gap: 8px; align-items: stretch; margin-bottom: 6px; }
+.outcome-stack { flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.btn-outcome {
+  flex: 1; border: none; border-radius: 10px; color: white; font-weight: 700;
+  font-size: 0.85rem; padding: 8px 10px; text-align: center;
+  display: flex; align-items: center; justify-content: center;
 }
-.btn-tap #rally-tap-count { font-size: 1.4rem; margin-left: 4px; }
-.btn-tap.active { background: var(--green-dark); box-shadow: inset 0 0 0 3px var(--accent-1); }
+.btn-outcome.active { box-shadow: inset 0 0 0 3px var(--accent-1); filter: brightness(0.92); }
+.btn-outcome-winner { background: var(--green); }
+.btn-outcome-forced { background: #e8590c; }
+.btn-outcome-unforced { background: var(--red); }
+
+/* Rally tap counter: a tall, square, thumb-friendly button for counting shots live as the point happens */
+.rally-tap-col { display: flex; flex-direction: column; gap: 6px; width: 100px; flex-shrink: 0; }
+.btn-tap-square {
+  flex: 1; background: var(--green); color: white; font-weight: 800;
+  border-radius: 12px; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 2px; font-size: 0.7rem;
+}
+.btn-tap-square #rally-tap-count { font-size: 1.7rem; font-weight: 800; line-height: 1; }
+.btn-tap-square.active { background: var(--green-dark); box-shadow: inset 0 0 0 3px var(--accent-1); }
 .btn-tap-reset {
-  flex-shrink: 0; width: 52px; border: 1px solid var(--border); background: white;
-  border-radius: 12px; font-size: 1.3rem; color: var(--text-muted); cursor: pointer;
+  flex-shrink: 0; height: 32px; width: 100%; border: 1px solid var(--border); background: white;
+  border-radius: 10px; font-size: 1.1rem; color: var(--text-muted); cursor: pointer;
 }
 
 /* Last point confirmation strip */

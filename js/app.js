@@ -523,25 +523,27 @@
     const showAce = draft.serve === "S1" || draft.serve === "S2";
     $("#step-ace").classList.toggle("hidden", !showAce);
 
-    // Simple Tracking skips rally length entirely - the point can be closed
-    // out as soon as an outcome + winner is tagged, right after the serve.
-    const showRally = showAce && !draft.ace && !simple;
-    $("#step-rally").classList.toggle("hidden", !showRally);
-    if (showRally) {
-      renderRallyBucketButtons();
-      $$("#rally-bucket-buttons [data-rally]").forEach(b => b.classList.toggle("active", draft.rallyBucket === b.dataset.rally));
-      $("#rally-tap-count").textContent = draft.rallyTapCount || 0;
-      $("#rally-tap-btn").classList.toggle("active", !!draft.rallyTapCount);
-    }
-
-    // Detail + Winner open together with the rally step in Detailed mode
+    // Detail + Winner open together with the rally counter in Detailed mode
     // (rally already defaults to 1 the moment a serve is picked); in Simple
-    // mode they open directly off the serve/ace choice since there's no
-    // rally step to gate on.
+    // mode they open directly off the serve/ace choice, just without the
+    // rally counter (Simple Tracking skips rally length entirely).
     const showDetailAndWinner = showAce && !draft.ace;
     $("#step-detail").classList.toggle("hidden", !showDetailAndWinner);
     $("#step-winner").classList.toggle("hidden", !showDetailAndWinner);
     if (showDetailAndWinner) {
+      const showRally = !simple;
+      // Simple Tracking keeps its original plain outcome row; Detailed gets the
+      // stacked Winner/Forced/Unforced buttons plus the rally-tap counter.
+      $("#outcome-row-simple").classList.toggle("hidden", showRally);
+      $("#outcome-row-detailed").classList.toggle("hidden", !showRally);
+      $("#rally-tap-col").classList.toggle("hidden", !showRally);
+      $("#rally-bucket-buttons").classList.toggle("hidden", !showRally);
+      if (showRally) {
+        renderRallyBucketButtons();
+        $$("#rally-bucket-buttons [data-rally]").forEach(b => b.classList.toggle("active", draft.rallyBucket === b.dataset.rally));
+        $("#rally-tap-count").textContent = draft.rallyTapCount || 0;
+        $("#rally-tap-btn").classList.toggle("active", !!draft.rallyTapCount);
+      }
       $$("#step-detail [data-outcome]").forEach(b => b.classList.toggle("active", draft.outcome === b.dataset.outcome));
       $("#shot-type-row").classList.toggle("hidden", simple);
       $("#zone-picker-inline").classList.toggle("hidden", simple);

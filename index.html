@@ -254,20 +254,24 @@
         <button type="button" class="btn btn-choice btn-ace" data-ace-toggle><span data-i18n="ace">Ace</span> 🔥🎾</button>
       </div>
 
-      <div class="step hidden" id="step-rally">
-        <div class="rally-tap-row">
-          <button type="button" id="rally-tap-btn" class="btn btn-tap">👆 <span data-i18n="tapPerShot">Tap per Shot</span> <span id="rally-tap-count">1</span></button>
-          <button type="button" id="rally-tap-reset" class="btn btn-tap-reset" data-i18n-title="reset" title="Reset">↺</button>
-        </div>
-        <div class="btn-row" id="rally-bucket-buttons"></div>
-      </div>
-
       <div class="step hidden" id="step-detail">
-        <div class="btn-row">
+        <div class="btn-row" id="outcome-row-simple">
           <button type="button" class="btn btn-choice btn-choice-sm btn-good" data-outcome="winner" data-i18n="winner">Winner</button>
           <button type="button" class="btn btn-choice btn-choice-sm btn-warn" data-outcome="forced_error" data-i18n="forcedErrShort">Forced Err.</button>
           <button type="button" class="btn btn-choice btn-choice-sm btn-warn" data-outcome="unforced_error" data-i18n="unforcedErrShort">Unforced Err.</button>
         </div>
+        <div class="rally-outcome-row" id="outcome-row-detailed">
+          <div class="outcome-stack">
+            <button type="button" class="btn btn-outcome btn-outcome-winner" data-outcome="winner" data-i18n="winner">Winner</button>
+            <button type="button" class="btn btn-outcome btn-outcome-forced" data-outcome="forced_error" data-i18n="forcedError">Forced Error</button>
+            <button type="button" class="btn btn-outcome btn-outcome-unforced" data-outcome="unforced_error" data-i18n="unforcedError">Unforced Error</button>
+          </div>
+          <div class="rally-tap-col" id="rally-tap-col">
+            <button type="button" id="rally-tap-btn" class="btn btn-tap-square">👆<span id="rally-tap-count">1</span></button>
+            <button type="button" id="rally-tap-reset" class="btn btn-tap-reset" data-i18n-title="reset" title="Reset">↺</button>
+          </div>
+        </div>
+        <div class="btn-row" id="rally-bucket-buttons"></div>
         <div class="btn-row" id="shot-type-row">
           <button type="button" class="btn btn-choice btn-choice-sm" data-shot="volley" data-i18n="volley">Volley</button>
           <button type="button" class="btn btn-choice btn-choice-sm" data-shot="smash" data-i18n="smash">Smash</button>
