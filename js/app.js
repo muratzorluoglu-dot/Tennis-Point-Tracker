@@ -522,6 +522,9 @@
 
     const showAce = draft.serve === "S1" || draft.serve === "S2";
     $("#step-ace").classList.toggle("hidden", !showAce);
+    // The rally-tap reset lives next to the Ace button but only makes sense
+    // alongside the rally counter itself, i.e. Detailed Tracking only.
+    $("#rally-tap-reset").classList.toggle("hidden", !showAce || simple);
 
     // Detail + Winner open together with the rally counter in Detailed mode
     // (rally already defaults to 1 the moment a serve is picked); in Simple

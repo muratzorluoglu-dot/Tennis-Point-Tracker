@@ -251,7 +251,10 @@
       </div>
 
       <div class="step hidden" id="step-ace">
-        <button type="button" class="btn btn-choice btn-ace" data-ace-toggle><span data-i18n="ace">Ace</span> 🔥🎾</button>
+        <div class="ace-row">
+          <button type="button" class="btn btn-choice btn-ace" data-ace-toggle><span data-i18n="ace">Ace</span> 🔥🎾</button>
+          <button type="button" id="rally-tap-reset" class="btn btn-tap-reset" data-i18n-title="reset" title="Reset">↺</button>
+        </div>
       </div>
 
       <div class="step hidden" id="step-detail">
@@ -268,7 +271,6 @@
           </div>
           <div class="rally-tap-col" id="rally-tap-col">
             <button type="button" id="rally-tap-btn" class="btn btn-tap-square">👆<span id="rally-tap-count">1</span></button>
-            <button type="button" id="rally-tap-reset" class="btn btn-tap-reset" data-i18n-title="reset" title="Reset">↺</button>
           </div>
         </div>
         <div class="btn-row" id="rally-bucket-buttons"></div>

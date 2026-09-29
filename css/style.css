@@ -71,7 +71,8 @@ body {
 .btn-warn { border-color: var(--red); }
 .btn-warn.active { background: #ffe3e3; border-color: var(--red); }
 .btn-sm { padding: 5px 10px; font-size: 0.78rem; }
-.btn-ace { border-color: #e8590c; background: #fff4e6; font-weight: 600; flex: 1 1 100%; padding: 8px; }
+.btn-ace { border-color: #e8590c; background: #fff4e6; font-weight: 600; flex: 1; padding: 8px; }
+.ace-row { display: flex; gap: 8px; align-items: stretch; }
 
 .btn-row { display: flex; gap: 6px; flex-wrap: wrap; margin: 4px 0; }
 
@@ -242,18 +243,19 @@ body {
 .btn-outcome-forced { background: #e8590c; }
 .btn-outcome-unforced { background: var(--red); }
 
-/* Rally tap counter: a tall, square, thumb-friendly button for counting shots live as the point happens */
-.rally-tap-col { display: flex; flex-direction: column; gap: 6px; width: 100px; flex: 0 0 100px; }
+/* Rally tap counter: a tall, square, thumb-friendly button for counting shots live as the point happens.
+   The reset control lives up in the Ace row instead, so the square can use the stack's full height. */
+.rally-tap-col { display: flex; width: 128px; flex: 0 0 128px; }
 .btn-tap-square {
   flex: 1; background: var(--green); color: white; font-weight: 800;
   border-radius: 12px; display: flex; flex-direction: column; align-items: center;
-  justify-content: center; gap: 2px; font-size: 0.75rem;
+  justify-content: center; gap: 4px; font-size: 0.8rem;
 }
-.btn-tap-square #rally-tap-count { font-size: 2.1rem; font-weight: 800; line-height: 1; }
+.btn-tap-square #rally-tap-count { font-size: 2.4rem; font-weight: 800; line-height: 1; }
 .btn-tap-square.active { background: var(--green-dark); box-shadow: inset 0 0 0 3px var(--accent-1); }
 .btn-tap-reset {
-  flex-shrink: 0; height: 32px; width: 100%; border: 1px solid var(--border); background: white;
-  border-radius: 10px; font-size: 1.1rem; color: var(--text-muted); cursor: pointer;
+  flex: 0 0 44px; border: 1px solid var(--border); background: white;
+  border-radius: 10px; font-size: 1.2rem; color: var(--text-muted); cursor: pointer;
 }
 
 /* Last point confirmation strip */
