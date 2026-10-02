@@ -1617,4 +1617,6 @@
   migratePlayerIds();
   showView("home");
   renderHome();
+  Cloud.onRestored = () => { migratePlayerIds(); renderHome(); };
+  Cloud.init();
 })();
