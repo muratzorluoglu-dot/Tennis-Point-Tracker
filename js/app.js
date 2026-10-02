@@ -474,7 +474,26 @@
   // Wide "tap once per shot" counter: an alternative to picking a bucket after
   // the fact. Whichever method was used last wins; the exact tap count is kept
   // as the point's rally value (more precise than the bucket's midpoint).
+  // Android/Chrome supports navigator.vibrate; iOS Safari doesn't, but toggling
+  // a hidden <input type="checkbox" switch> (Safari 17.4+) makes it tick.
+  const hapticLabel = document.createElement("label");
+  hapticLabel.setAttribute("aria-hidden", "true");
+  hapticLabel.style.cssText = "position:fixed;left:-100px;top:0;width:1px;height:1px;opacity:0;pointer-events:none;overflow:hidden;";
+  const hapticSwitch = document.createElement("input");
+  hapticSwitch.type = "checkbox";
+  hapticSwitch.setAttribute("switch", "");
+  hapticSwitch.tabIndex = -1;
+  hapticLabel.appendChild(hapticSwitch);
+  document.body.appendChild(hapticLabel);
+  function haptic() {
+    try {
+      if (navigator.vibrate) navigator.vibrate(12);
+      else hapticLabel.click();
+    } catch (_) { /* haptics are best-effort */ }
+  }
+
   $("#rally-tap-btn").addEventListener("click", () => {
+    haptic();
     draft.rallyTapCount = (draft.rallyTapCount || 0) + 1;
     draft.rallyBucket = bucketForTapCount(draft.rallyTapCount).id;
     renderDraft();

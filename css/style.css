@@ -251,6 +251,8 @@ body {
   border-radius: 12px; display: flex; flex-direction: column; align-items: center;
   justify-content: center; gap: 4px; font-size: 0.8rem;
 }
+.btn-tap-square { transition: transform 0.06s ease-out; }
+.btn-tap-square:active { transform: scale(0.94); }
 .btn-tap-square #rally-tap-count { font-size: 2.4rem; font-weight: 800; line-height: 1; }
 .btn-tap-square.active { background: var(--green-dark); box-shadow: inset 0 0 0 3px var(--accent-1); }
 .btn-tap-reset {
