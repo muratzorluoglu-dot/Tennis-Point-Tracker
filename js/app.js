@@ -478,13 +478,12 @@
   // a hidden <input type="checkbox" switch> (Safari 17.4+) makes it tick.
   const hapticLabel = document.createElement("label");
   hapticLabel.setAttribute("aria-hidden", "true");
-  hapticLabel.style.cssText = "position:fixed;left:-100px;top:0;width:1px;height:1px;opacity:0;pointer-events:none;overflow:hidden;";
+  hapticLabel.style.display = "none";
   const hapticSwitch = document.createElement("input");
   hapticSwitch.type = "checkbox";
   hapticSwitch.setAttribute("switch", "");
-  hapticSwitch.tabIndex = -1;
   hapticLabel.appendChild(hapticSwitch);
-  document.body.appendChild(hapticLabel);
+  document.head.appendChild(hapticLabel);
   function haptic() {
     try {
       if (navigator.vibrate) navigator.vibrate(12);
