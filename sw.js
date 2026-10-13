@@ -1,4 +1,4 @@
-const CACHE_NAME = "tennis-tracker-v17";
+const CACHE_NAME = "tennis-tracker-v18";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -29,10 +29,12 @@ self.addEventListener("activate", (event) => {
 });
 
 // Network-first with cache fallback, so a match in progress still works if wifi drops.
+// "no-cache" makes the browser revalidate instead of trusting GitHub Pages' 10-minute max-age,
+// so a fresh deploy shows up on the next open.
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
   event.respondWith(
-    fetch(event.request)
+    fetch(event.request.url, { cache: "no-cache", credentials: "same-origin" })
       .then((response) => {
         if (response.ok) {
           const copy = response.clone();

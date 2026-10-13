@@ -381,6 +381,13 @@
 <script src="js/app.js"></script>
 <script>
   if ("serviceWorker" in navigator) {
+    // When a new version takes over, reload once so it shows immediately - but only from the home
+    // screen, never in the middle of scoring a match.
+    const hadController = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      const home = document.getElementById("view-home");
+      if (hadController && home && !home.classList.contains("hidden") && !document.body.classList.contains("watch-mode")) location.reload();
+    });
     window.addEventListener("load", () => {
       navigator.serviceWorker.register("sw.js").catch(() => {});
     });
