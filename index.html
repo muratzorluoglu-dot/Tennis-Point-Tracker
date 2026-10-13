@@ -79,6 +79,10 @@
           <div class="guide-body" data-i18n-html="guideLiveHtml"></div>
         </details>
         <details class="guide-item">
+          <summary data-i18n="guideShareTitle">Live Share: let others follow the match</summary>
+          <div class="guide-body" data-i18n-html="guideShareHtml"></div>
+        </details>
+        <details class="guide-item">
           <summary data-i18n="guideStatsTitle">Match Stats: what you get</summary>
           <div class="guide-body" data-i18n-html="guideStatsHtml"></div>
         </details>
@@ -238,7 +242,28 @@
     <div class="live-top-actions">
       <button type="button" id="btn-undo" class="action-btn-top" disabled><span class="action-icon">↺</span><span data-i18n="undo">Undo</span></button>
       <button type="button" id="btn-swap-server" class="action-btn-top hidden">🔄 <span data-i18n="swapServer">Swap Server</span></button>
+      <button type="button" id="btn-live-share" class="action-btn-top">📡 <span data-i18n="liveShare">Live Share</span></button>
     </div>
+    <div id="live-share-panel" class="card live-share-panel hidden">
+      <div class="panel-head">
+        <h3 data-i18n="liveShareTitle">Share live score</h3>
+        <button type="button" id="btn-live-share-close" class="btn btn-ghost btn-sm" aria-label="Close">✕</button>
+      </div>
+      <p class="meta" data-i18n="liveShareIntro"></p>
+      <div id="live-share-idle">
+        <button type="button" id="btn-live-share-start" class="btn btn-primary btn-large" data-i18n="liveShareStart">Start sharing</button>
+      </div>
+      <div id="live-share-active" class="hidden">
+        <div id="live-share-status" class="live-share-status"></div>
+        <input type="text" id="live-share-link" readonly>
+        <div class="backup-actions">
+          <a id="btn-live-share-wa" class="btn btn-primary" target="_blank" rel="noopener">💬 <span data-i18n="liveShareWhatsapp">Send via WhatsApp</span></a>
+          <button type="button" id="btn-live-share-copy" class="btn btn-ghost">📋 <span data-i18n="liveShareCopy">Copy link</span></button>
+          <button type="button" id="btn-live-share-stop" class="btn btn-ghost" data-i18n="liveShareStop">Stop sharing</button>
+        </div>
+      </div>
+    </div>
+    <div id="watch-banner" class="watch-banner"></div>
     <div class="scoreboard" id="scoreboard"></div>
 
     <div class="point-entry card">
@@ -348,6 +373,7 @@
 <script src="js/court.js"></script>
 <script src="js/export.js"></script>
 <script src="js/ai-review.js"></script>
+<script src="js/live-share.js"></script>
 <script src="js/app.js"></script>
 <script>
   if ("serviceWorker" in navigator) {

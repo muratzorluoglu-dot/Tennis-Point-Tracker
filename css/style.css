@@ -299,7 +299,31 @@ body {
 }
 .action-btn-top:disabled { opacity: 0.4; cursor: not-allowed; }
 .action-btn-top:first-child { flex: 0 0 auto; }
-.action-btn-top:last-child:not(:first-child) { flex: 1; }
+.live-top-actions .action-btn-top:not(:first-child) { flex: 1; }
+.action-btn-top.sharing { border-color: var(--red); color: var(--red); }
+.action-btn-top.sharing::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--red); }
+
+/* Live score sharing: coach panel + read-only viewer */
+.live-share-panel { margin-bottom: 8px; }
+.live-share-panel .meta { margin: 6px 0 10px; line-height: 1.45; }
+.live-share-status { font-weight: 700; font-size: 0.85rem; color: var(--red); margin-bottom: 6px; }
+.live-share-status.warn { color: var(--amber); }
+#live-share-link { width: 100%; padding: 9px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.82rem; margin-bottom: 8px; background: #f8f9f8; }
+#btn-live-share-wa { text-decoration: none; display: inline-flex; align-items: center; gap: 4px; }
+.watch-banner { display: none; margin-bottom: 8px; }
+.watch-mode .watch-banner { display: block; }
+.watch-status { display: flex; align-items: center; gap: 7px; font-weight: 700; font-size: 0.9rem; }
+.watch-dot { width: 10px; height: 10px; border-radius: 50%; background: #9ca3af; }
+.watch-dot.on { background: var(--red); animation: watch-pulse 1.4s ease-in-out infinite; }
+@keyframes watch-pulse { 50% { opacity: 0.35; } }
+.watch-meta { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+#scoreboard:empty { display: none; }
+.watch-mode .live-top-actions, .watch-mode .point-entry, .watch-mode #last-point-strip,
+.watch-mode #btn-exit-live, .watch-mode #live-share-panel,
+.watch-mode #btn-summary-pdf, .watch-mode #btn-summary-share, .watch-mode #btn-ai-review,
+.watch-mode #btn-log-pdf, .watch-mode #btn-log-share, .watch-mode [data-share-group] { display: none !important; }
+.watch-mode #view-live .live-actions { grid-template-columns: repeat(2, 1fr); }
+@media (prefers-reduced-motion: reduce) { .watch-dot.on { animation: none; } }
 
 /* Point log table */
 .table-scroll { overflow-x: auto; }

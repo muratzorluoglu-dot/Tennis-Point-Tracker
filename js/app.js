@@ -49,6 +49,8 @@
     trackedPlayers: [1, 2],
     match: null,           // TennisMatch instance
     trackingMode: "detailed", // "simple" | "detailed" - which live point-entry flow the current match uses
+    liveTopic: null,       // ntfy topic used for live score sharing (stable per match, so the WhatsApp link keeps working)
+    liveActive: false,     // true while this match is being broadcast
   };
 
   let draft = emptyDraft();
@@ -77,6 +79,7 @@
   // ---------- LANGUAGE ----------
   $$(".lang-btn").forEach((btn) => btn.addEventListener("click", () => I18N.setLang(btn.dataset.lang)));
   I18N.onChange(() => {
+    if (document.body.classList.contains("watch-mode")) { refreshWatchView(); return; }
     populateSetFormatSelect();
     populateSurfaceSelect();
     populateTournamentTypeSelect();
@@ -144,7 +147,9 @@
   function openMatch(id) {
     const rec = Storage.get(id);
     if (!rec) return;
+    detachPublisher();
     hydrateMatch(rec);
+    if (state.liveActive && !rec.finished) startPublisher();
     if (rec.finished) {
       renderSummary();
       showView("summary");
@@ -162,6 +167,8 @@
     };
     state.trackedPlayers = rec.trackedPlayers && rec.trackedPlayers.length ? rec.trackedPlayers : [1, 2];
     state.trackingMode = rec.trackingMode || "detailed";
+    state.liveTopic = rec.liveTopic || null;
+    state.liveActive = !!rec.liveActive && !rec.finished;
     const m = new TennisMatch({
       player1: rec.player1, player2: rec.player2,
       bestOf: rec.bestOf || DEFAULT_BEST_OF,
@@ -194,6 +201,8 @@
       player2Id: state.matchMeta.player2Id,
       trackedPlayers: state.trackedPlayers,
       trackingMode: state.trackingMode,
+      liveTopic: state.liveTopic,
+      liveActive: state.liveActive,
       bestOf: m.bestOf,
       finished: m.isMatchOver(),
       match: {
@@ -365,6 +374,9 @@
     if ($("#f-track-p1").checked) trackedPlayers.push(1);
     if ($("#f-track-p2").checked) trackedPlayers.push(2);
 
+    detachPublisher();
+    state.liveTopic = null;
+    state.liveActive = false;
     state.matchId = uid();
     state.matchMeta = {
       tournament: $("#f-tournament").value.trim(),
@@ -397,6 +409,7 @@
     const m = state.match;
     const current = m.currentServer();
     if (m.setServer(current === 1 ? 2 : 1)) {
+      if (publisher) publisher.server(m.currentServer());
       persist();
       renderLive();
     }
@@ -593,6 +606,10 @@
       zone: isTerminal ? null : draft.zone,
     };
     const entry = state.match.addPoint(meta);
+    if (publisher) {
+      publisher.point(meta);
+      if (state.match.isMatchOver()) { publisher.stop(); publisher = null; state.liveActive = false; renderLiveSharePanel(); }
+    }
     persist();
     draft = emptyDraft();
     renderLive();
@@ -610,6 +627,7 @@
   $("#btn-undo").addEventListener("click", () => {
     if (!state.match.canUndo()) return;
     state.match.undo();
+    if (publisher) publisher.undo();
     persist();
     draft = emptyDraft();
     $("#last-point-strip").classList.add("hidden");
@@ -621,6 +639,7 @@
   });
 
   $("#btn-view-summary").addEventListener("click", () => {
+    if (!state.match) return;
     renderSummary();
     showView("summary");
   });
@@ -631,7 +650,7 @@
   });
 
   $("#btn-summary-back").addEventListener("click", () => {
-    if (state.match && !state.match.isMatchOver()) {
+    if (document.body.classList.contains("watch-mode") || (state.match && !state.match.isMatchOver())) {
       showView("live");
       renderLive();
     } else {
@@ -1609,8 +1628,138 @@
     e.target.value = ""; // allow importing the same filename again later
   });
 
+  // ---------- LIVE SHARE (coach side) ----------
+  const LIVE_PAGES_URL = "https://muratzorluoglu-dot.github.io/Tennis-Point-Tracker/";
+  let publisher = null;
+  let publisherStatus = { pending: 0, error: null };
+
+  // The link has to open a public page, so inside a (private) artifact it points at GitHub Pages.
+  function liveBaseUrl() {
+    const h = location.hostname;
+    return h.endsWith("github.io") || h === "localhost" || h === "127.0.0.1" ? location.origin + location.pathname : LIVE_PAGES_URL;
+  }
+  function liveLink() { return `${liveBaseUrl()}#w=${state.liveTopic}`; }
+
+  // Only match data goes out: names, format, tournament/round/surface and the points themselves.
+  function liveConfig() {
+    const m = state.match, meta = state.matchMeta || {};
+    return {
+      p1: m.player1, p2: m.player2, bo: m.bestOf, ss: m.sets[0].games[0].server,
+      f: { g: m.format.gamesPerSet, a: m.format.noAd ? 1 : 0, t: m.format.tbAt, m: m.format.finalSetMatchTiebreak ? 1 : 0, id: m.format.formatId },
+      tr: state.trackedPlayers, md: state.trackingMode === "simple" ? "s" : "d",
+      tn: meta.tournament || "", tt: meta.tournamentType || "", rd: meta.round || "", su: meta.surface || "",
+      st: m.matchStartTime,
+    };
+  }
+
+  function startPublisher() {
+    detachPublisher();
+    publisher = LiveShare.createPublisher(state.liveTopic, (s) => { publisherStatus = s; renderLiveSharePanel(); });
+    publisher.start(liveConfig(), state.match.pointLog.map(LiveShare.metaFromEntry));
+  }
+  function detachPublisher() {
+    if (publisher) publisher.abort();
+    publisher = null;
+    publisherStatus = { pending: 0, error: null };
+  }
+
+  function renderLiveSharePanel() {
+    const active = !!(state.liveActive && publisher);
+    $("#live-share-idle").classList.toggle("hidden", active);
+    $("#live-share-active").classList.toggle("hidden", !active);
+    $("#btn-live-share").classList.toggle("sharing", active);
+    if (!active) return;
+    const status = publisherStatus.error ? t("liveShareOffline") : publisherStatus.pending ? t("liveShareSending") : t("liveShareOn");
+    const el = $("#live-share-status");
+    el.textContent = status;
+    el.classList.toggle("warn", !!publisherStatus.error);
+    $("#live-share-link").value = liveLink();
+    const msg = t("liveShareWaMsg", { p1: state.match.player1, p2: state.match.player2, link: liveLink() });
+    $("#btn-live-share-wa").href = `https://wa.me/?text=${encodeURIComponent(msg)}`;
+  }
+
+  $("#btn-live-share").addEventListener("click", () => {
+    $("#live-share-panel").classList.toggle("hidden");
+    renderLiveSharePanel();
+  });
+  $("#btn-live-share-close").addEventListener("click", () => $("#live-share-panel").classList.add("hidden"));
+  $("#btn-live-share-start").addEventListener("click", () => {
+    if (!state.liveTopic) state.liveTopic = LiveShare.newTopic();
+    state.liveActive = true;
+    startPublisher();
+    persist();
+    renderLiveSharePanel();
+  });
+  $("#btn-live-share-stop").addEventListener("click", () => {
+    if (publisher) publisher.stop();
+    publisher = null;
+    state.liveActive = false;
+    persist();
+    renderLiveSharePanel();
+  });
+  $("#btn-live-share-copy").addEventListener("click", async (e) => {
+    const input = $("#live-share-link");
+    try { await navigator.clipboard.writeText(input.value); }
+    catch (_) { input.select(); document.execCommand && document.execCommand("copy"); }
+    const label = e.currentTarget.querySelector("span");
+    label.textContent = t("liveShareCopied");
+    setTimeout(() => { label.textContent = t("liveShareCopy"); }, 1500);
+  });
+  $("#live-share-link").addEventListener("focus", (e) => e.target.select());
+
+  // ---------- LIVE SHARE (viewer side, opened from the shared link) ----------
+  const watch = { replayer: null, connected: false };
+
+  function parseWatchTopic() {
+    const m = /^#w=([a-z0-9]+)$/i.exec(location.hash);
+    return m && LiveShare.isValidTopic(m[1]) ? m[1] : null;
+  }
+
+  function renderWatchBanner() {
+    const rp = watch.replayer;
+    if (!rp) return;
+    const m = rp.match, c = rp.cfg;
+    let status, live = false;
+    if (!m) status = watch.connected ? t("watchEmpty") : t("watchConnecting");
+    else if (m.isMatchOver()) status = t("matchFinished");
+    else if (rp.ended) status = t("watchEnded");
+    else { live = watch.connected; status = watch.connected ? t("watchLive") : t("watchReconnecting"); }
+    const parts = [];
+    if (c && (c.tn || c.rd)) parts.push(escapeHtml([c.tn, c.rd].filter(Boolean).join(" · ")));
+    if (rp.lastTs) parts.push(t("watchUpdated", { time: new Date(rp.lastTs).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }) }));
+    $("#watch-banner").innerHTML = `<div class="watch-status"><span class="watch-dot ${live ? "on" : ""}"></span>${status}</div>${parts.length ? `<div class="watch-meta">${parts.join(" · ")}</div>` : ""}`;
+  }
+
+  function refreshWatchView() {
+    const rp = watch.replayer;
+    renderWatchBanner();
+    if (!rp || !rp.match) return;
+    const c = rp.cfg;
+    state.match = rp.match;
+    state.trackedPlayers = c.tr && c.tr.length ? c.tr : [1, 2];
+    state.trackingMode = c.md === "s" ? "simple" : "detailed";
+    state.matchMeta = { tournament: c.tn, tournamentType: c.tt, round: c.rd, surface: c.su, createdAt: c.st };
+    if (currentViewName() === "summary") renderSummary(); else renderLive();
+  }
+
+  function startWatchMode(topic) {
+    document.body.classList.add("watch-mode");
+    if (!localStorage.getItem("tt_lang") && /^tr/i.test(navigator.language || "")) I18N.setLang("tr");
+    watch.replayer = LiveShare.createReplayer();
+    showView("live");
+    renderWatchBanner();
+    LiveShare.subscribe(topic, {
+      onMessage: (msg) => { if (watch.replayer.push(msg)) refreshWatchView(); },
+      onStatus: (s) => { watch.connected = s.connected; renderWatchBanner(); },
+    });
+    setInterval(renderWatchBanner, 15000);
+    window.addEventListener("hashchange", () => location.reload());
+  }
+
   // ---------- init ----------
   I18N.applyStatic();
+  const watchTopic = parseWatchTopic();
+  if (watchTopic) { startWatchMode(watchTopic); return; }
   populateSetFormatSelect();
   populatePlayerFieldSelects();
   syncPlayerNameUI();
