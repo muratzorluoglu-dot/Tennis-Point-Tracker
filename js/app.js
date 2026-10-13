@@ -53,9 +53,18 @@
     liveActive: false,     // true while this match is being broadcast
   };
 
-  let draft = emptyDraft();
+  let draft = newPointDraft();
   function emptyDraft() {
     return { serve: null, ace: false, rallyBucket: null, rallyTapCount: null, pointWinner: null, outcome: null, shots: [], zone: null };
+  }
+  // Every point opens with 1st Serve already chosen (the usual case), so a normal point is just
+  // outcome + winner; 2nd Serve / Double Fault / Ace are one tap away.
+  function newPointDraft() {
+    const d = emptyDraft();
+    d.serve = "S1";
+    d.rallyTapCount = 1;
+    d.rallyBucket = bucketForTapCount(1).id;
+    return d;
   }
 
   function escapeHtml(str) {
@@ -151,6 +160,7 @@
     if (!rec) return;
     detachPublisher();
     hydrateMatch(rec);
+    draft = newPointDraft();
     if (state.liveActive && !rec.finished && canBroadcast()) startPublisher();
     if (rec.finished) {
       renderSummary();
@@ -401,7 +411,7 @@
       },
     });
     persist();
-    draft = emptyDraft();
+    draft = newPointDraft();
     showView("live");
     renderLive();
   });
@@ -462,6 +472,8 @@
   // ---------- LIVE: point entry draft (auto-saves as soon as the minimum is known) ----------
   $$("[data-serve]").forEach(btn => btn.addEventListener("click", () => {
     $("#live-share-panel").classList.add("hidden");
+    // Tapping the serve that is already selected must not wipe the outcome/rally entered so far.
+    if (btn.dataset.serve !== "DF" && draft.serve === btn.dataset.serve) return;
     draft = emptyDraft();
     draft.serve = btn.dataset.serve;
     if (draft.serve === "DF") { commitPoint(); return; }
@@ -614,7 +626,7 @@
       if (state.match.isMatchOver()) { publisher.stop(); publisher = null; state.liveActive = false; renderLiveSharePanel(); }
     }
     persist();
-    draft = emptyDraft();
+    draft = newPointDraft();
     renderLive();
     showLastPointStrip(entry);
   }
@@ -632,7 +644,7 @@
     state.match.undo();
     if (publisher) publisher.undo();
     persist();
-    draft = emptyDraft();
+    draft = newPointDraft();
     $("#last-point-strip").classList.add("hidden");
     renderLive();
   });
