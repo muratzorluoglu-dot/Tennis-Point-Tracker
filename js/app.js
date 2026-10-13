@@ -86,7 +86,9 @@
     populateCountrySelect();
     syncPlayerNameUI();
     // re-render whichever screen is currently on view so dynamically-built HTML picks up the new language
+    if (!$("#install-sheet").classList.contains("hidden")) renderInstallSheet();
     switch (currentViewName()) {
+      case "about": renderShareCard(); break;
       case "home": renderHome(); break;
       case "live": renderLive(); break;
       case "summary": renderSummary(); break;
@@ -100,7 +102,7 @@
     const dest = btn.dataset.nav;
     if (dest === "home") { showView("home"); renderHome(); }
   }));
-  $("#btn-nav-about").addEventListener("click", () => showView("about"));
+  $("#btn-nav-about").addEventListener("click", () => { showView("about"); renderShareCard(); });
   $("#btn-nav-players").addEventListener("click", () => { showView("players"); renderPlayersList(); resetPlayerForm(); });
   $("#btn-nav-player-stats").addEventListener("click", () => { showView("playerStats"); renderPlayerStatsSelect(true); });
 
@@ -1773,6 +1775,102 @@
     window.addEventListener("hashchange", () => location.reload());
   }
 
+  // ---------- INSTALL & SHARE THE APP (no app store: add-to-home-screen guide + link/QR) ----------
+  const APP_URL = LIVE_PAGES_URL;
+  const ua = navigator.userAgent;
+  const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const isIOSSafari = isIOS && /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS|GSA|Instagram|FBAN|FBAV|Line|MicroMessenger/.test(ua);
+  const isAndroid = /Android/.test(ua);
+  const isStandalone = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  const canInstallHere = /(^|\.)github\.io$|^localhost$|^127\.0\.0\.1$/.test(location.hostname);
+  const INSTALL_DISMISS_KEY = "tt_install_dismissed";
+  let deferredInstall = null; // Chrome/Android one-tap install prompt, when the browser offers it
+
+  function installDismissed() {
+    try { return localStorage.getItem(INSTALL_DISMISS_KEY) === "1"; } catch (_) { return false; }
+  }
+
+  function updateInstallBanner() {
+    const show = canInstallHere && !isStandalone && (isIOS || isAndroid) && !installDismissed();
+    $("#install-banner").classList.toggle("hidden", !show);
+  }
+
+  function installSteps(keys) {
+    return `<ol class="install-steps">${keys.map((k) => `<li><span>${t(k)}</span></li>`).join("")}</ol>`;
+  }
+
+  function renderInstallSheet() {
+    const ios = `<div class="install-section-title">${t("installIosHeading")}</div>`
+      + (isIOS && !isIOSSafari ? `<div class="install-note">${t("installIosOpenSafari")}</div>` : "")
+      + installSteps(["installIos1", "installIos2", "installIos3"]);
+    const android = `<div class="install-section-title">${t("installAndroidHeading")}</div>`
+      + (deferredInstall ? `<button type="button" class="btn btn-primary btn-large" id="btn-install-now">${t("installNow")}</button>` : "")
+      + installSteps(["installAnd1", "installAnd2", "installAnd3"]);
+    const desktop = !isIOS && !isAndroid ? `<div class="install-note">${t("installDesktop")}</div>` : "";
+    $("#install-sheet-content").innerHTML = desktop + (isAndroid ? android + ios : ios + android)
+      + `<div class="install-note">${t("installNoteWhatsapp")}</div>`;
+    const now = $("#btn-install-now");
+    if (now) now.addEventListener("click", runInstallPrompt);
+  }
+
+  function openInstallSheet() { renderInstallSheet(); $("#install-sheet").classList.remove("hidden"); }
+  function closeInstallSheet() { $("#install-sheet").classList.add("hidden"); }
+
+  async function runInstallPrompt() {
+    if (!deferredInstall) return;
+    deferredInstall.prompt();
+    try { await deferredInstall.userChoice; } catch (_) { /* dismissed */ }
+    deferredInstall = null;
+    closeInstallSheet();
+    updateInstallBanner();
+  }
+
+  window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); deferredInstall = e; });
+  window.addEventListener("appinstalled", () => { deferredInstall = null; closeInstallSheet(); $("#install-banner").classList.add("hidden"); });
+  $("#btn-install").addEventListener("click", () => { if (deferredInstall) runInstallPrompt(); else openInstallSheet(); });
+  $("#btn-install-dismiss").addEventListener("click", () => {
+    try { localStorage.setItem(INSTALL_DISMISS_KEY, "1"); } catch (_) { /* private mode */ }
+    updateInstallBanner();
+  });
+  $("#btn-install-howto").addEventListener("click", openInstallSheet);
+  $("#btn-install-sheet-close").addEventListener("click", closeInstallSheet);
+  $("#install-sheet").addEventListener("click", (e) => { if (e.target.id === "install-sheet") closeInstallSheet(); });
+
+  function drawQr(canvas, text) {
+    try {
+      const qr = qrcode(0, "M");
+      qr.addData(text);
+      qr.make();
+      const n = qr.getModuleCount(), quiet = 4, cell = 8, total = (n + quiet * 2) * cell;
+      canvas.width = canvas.height = total;
+      const ctx = canvas.getContext("2d");
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(0, 0, total, total);
+      ctx.fillStyle = "#000";
+      for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (qr.isDark(r, c)) ctx.fillRect((c + quiet) * cell, (r + quiet) * cell, cell, cell);
+    } catch (_) { canvas.classList.add("hidden"); }
+  }
+
+  function renderShareCard() {
+    $("#share-app-link").value = APP_URL;
+    $("#btn-share-app-wa").href = `https://wa.me/?text=${encodeURIComponent(t("shareAppWaMsg", { link: APP_URL }))}`;
+    $("#btn-share-app-native").classList.toggle("hidden", !navigator.share);
+    drawQr($("#share-app-qr"), APP_URL);
+  }
+
+  $("#btn-share-app-copy").addEventListener("click", async (e) => {
+    const input = $("#share-app-link");
+    try { await navigator.clipboard.writeText(input.value); }
+    catch (_) { input.select(); document.execCommand && document.execCommand("copy"); }
+    const label = e.currentTarget.querySelector("span");
+    label.textContent = t("liveShareCopied");
+    setTimeout(() => { label.textContent = t("liveShareCopy"); }, 1500);
+  });
+  $("#btn-share-app-native").addEventListener("click", () => {
+    navigator.share({ text: t("shareAppWaMsg", { link: APP_URL }) }).catch(() => { /* cancelled */ });
+  });
+  $("#share-app-link").addEventListener("focus", (e) => e.target.select());
+
   // ---------- init ----------
   // iOS Safari ignores user-scalable=no; block pinch-zoom so frantic rally tapping can't zoom the page.
   document.addEventListener("gesturestart", (e) => e.preventDefault());
@@ -1785,6 +1883,7 @@
   migratePlayerIds();
   showView("home");
   renderHome();
+  updateInstallBanner();
   Cloud.onRestored = () => { migratePlayerIds(); renderHome(); };
   Cloud.init();
 })();

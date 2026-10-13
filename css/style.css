@@ -423,6 +423,41 @@ button, input, select, textarea { font-family: inherit; color: inherit; }
 .watch-mode #view-live .live-actions { grid-template-columns: repeat(2, 1fr); }
 @media (prefers-reduced-motion: reduce) { .watch-dot.on { animation: none; } .btn, .btn-tap-square, .match-item, .home-menu-item { transition: none; } }
 
+/* Install banner (home) + install sheet + share-the-app card */
+.install-banner {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 12px; padding: 10px 10px 10px 14px;
+  background: var(--tint); border: 1px solid color-mix(in srgb, var(--brand) 28%, transparent); border-radius: var(--radius);
+}
+.install-banner-icon { font-size: 1.5rem; line-height: 1; }
+.install-banner-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.install-banner-text strong { font-size: 0.9rem; }
+.install-banner-text span { font-size: 0.72rem; color: var(--text-muted); line-height: 1.3; }
+.install-dismiss { border: none; background: transparent; color: var(--text-muted); font-size: 1rem; padding: 6px 8px; cursor: pointer; border-radius: 8px; }
+
+.sheet {
+  position: fixed; inset: 0; z-index: 60; display: flex; align-items: flex-end; justify-content: center;
+  background: rgba(0, 0, 0, 0.55); padding: 0;
+}
+.sheet-body {
+  width: 100%; max-width: 480px; max-height: 88vh; overflow-y: auto; background: var(--card-bg); color: var(--text);
+  border-radius: 24px 24px 0 0; padding: 18px 18px calc(22px + env(safe-area-inset-bottom, 0px)); box-shadow: 0 -20px 40px -20px rgba(0, 0, 0, 0.6);
+}
+.install-steps { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 12px; counter-reset: step; }
+.install-steps li { counter-increment: step; display: flex; align-items: center; gap: 12px; font-size: 0.95rem; line-height: 1.4; }
+.install-steps li::before {
+  content: counter(step); flex: 0 0 30px; height: 30px; border-radius: 50%; background: var(--brand); color: white;
+  display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.9rem;
+}
+.install-steps .ic { display: inline-flex; vertical-align: middle; padding: 3px 6px; background: var(--surface-2); border-radius: 8px; margin: 0 2px; }
+.install-steps .ic svg { width: 1.15em; height: 1.15em; display: block; }
+.install-note { margin: 14px 0 0; padding: 10px 12px; background: var(--ace-bg); border-radius: var(--radius-sm); font-size: 0.8rem; line-height: 1.45; }
+.install-section-title { font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin: 16px 0 4px; }
+.qr-box { display: flex; justify-content: center; margin: 10px 0 4px; }
+.qr-box canvas { width: 200px; height: 200px; border-radius: 14px; background: #fff; box-shadow: var(--shadow); }
+.qr-caption { text-align: center; margin: 0 0 10px; }
+#share-app-link { width: 100%; padding: 10px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: 0.8rem; margin-bottom: 8px; background: var(--surface-2); color: var(--text); }
+#btn-share-app-wa { text-decoration: none; display: inline-flex; align-items: center; gap: 4px; }
+
 .update-banner {
   position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 50;
   background: var(--ball); color: var(--ball-ink); border: none; border-radius: 999px;

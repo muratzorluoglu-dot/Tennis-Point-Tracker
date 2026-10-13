@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="Tennis Tracker" />
-<link rel="stylesheet" href="css/style.css?v=20" />
+<link rel="stylesheet" href="css/style.css?v=21" />
 </head>
 <body>
 
@@ -24,10 +24,29 @@
   </div>
 </header>
 
+<div id="install-sheet" class="sheet hidden" role="dialog" aria-modal="true" aria-labelledby="install-sheet-title">
+  <div class="sheet-body">
+    <div class="panel-head">
+      <h3 id="install-sheet-title" data-i18n="installHowTo">How to install</h3>
+      <button type="button" id="btn-install-sheet-close" class="btn btn-ghost btn-sm" aria-label="Close">✕</button>
+    </div>
+    <div id="install-sheet-content"></div>
+  </div>
+</div>
+
 <main id="app">
 
   <!-- HOME -->
   <section id="view-home" class="view">
+    <div id="install-banner" class="install-banner hidden">
+      <span class="install-banner-icon">📲</span>
+      <div class="install-banner-text">
+        <strong data-i18n="installTitle">Install the app</strong>
+        <span data-i18n="installSub">Add it to your home screen - opens like a normal app</span>
+      </div>
+      <button type="button" id="btn-install" class="btn btn-primary btn-sm" data-i18n="installBtn">Install</button>
+      <button type="button" id="btn-install-dismiss" class="install-dismiss" aria-label="Close">✕</button>
+    </div>
     <div class="home-menu">
       <button type="button" class="home-menu-item" id="btn-nav-about">
         <span class="hmi-icon">ℹ️</span><span class="hmi-label" data-i18n="navAbout">About</span>
@@ -57,6 +76,19 @@
       <p data-i18n="aboutWhatBody">...</p>
       <h3 data-i18n="aboutWhyTitle">Why it exists</h3>
       <p data-i18n="aboutWhyBody">...</p>
+    </div>
+    <div class="about-content card" id="share-app-card">
+      <h3 data-i18n="shareAppTitle">Share the app</h3>
+      <p data-i18n="shareAppBody">Send the link to a player or coach - they open it on their phone and add it to the home screen. Free, no store, no sign-up.</p>
+      <div class="qr-box"><canvas id="share-app-qr" width="220" height="220" aria-label="QR code"></canvas></div>
+      <p class="meta qr-caption" data-i18n="shareAppQrHint">Scan with the phone camera</p>
+      <input type="text" id="share-app-link" readonly>
+      <div class="backup-actions">
+        <a id="btn-share-app-wa" class="btn btn-primary" target="_blank" rel="noopener">💬 <span data-i18n="liveShareWhatsapp">Send via WhatsApp</span></a>
+        <button type="button" id="btn-share-app-copy" class="btn btn-ghost">📋 <span data-i18n="liveShareCopy">Copy link</span></button>
+        <button type="button" id="btn-share-app-native" class="btn btn-ghost hidden">📤 <span data-i18n="share">Share</span></button>
+        <button type="button" id="btn-install-howto" class="btn btn-ghost">📲 <span data-i18n="installHowTo">How to install</span></button>
+      </div>
     </div>
     <div class="about-content card">
       <h3 data-i18n="guideTitle">User Guide</h3>
@@ -371,14 +403,15 @@
 
 </main>
 
-<script src="js/i18n.js?v=20"></script>
-<script src="js/scoring.js?v=20"></script>
-<script src="js/storage.js?v=20"></script>
-<script src="js/court.js?v=20"></script>
-<script src="js/export.js?v=20"></script>
-<script src="js/ai-review.js?v=20"></script>
-<script src="js/live-share.js?v=20"></script>
-<script src="js/app.js?v=20"></script>
+<script src="js/i18n.js?v=21"></script>
+<script src="js/scoring.js?v=21"></script>
+<script src="js/storage.js?v=21"></script>
+<script src="js/court.js?v=21"></script>
+<script src="js/export.js?v=21"></script>
+<script src="js/ai-review.js?v=21"></script>
+<script src="js/live-share.js?v=21"></script>
+<script src="js/qrcode.js?v=21"></script>
+<script src="js/app.js?v=21"></script>
 <script>
   if ("serviceWorker" in navigator) {
     // When a new version takes over, reload once so it shows immediately - but only from the home
