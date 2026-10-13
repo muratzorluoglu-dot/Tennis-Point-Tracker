@@ -218,7 +218,13 @@ button, input, select, textarea { font-family: inherit; color: inherit; }
 .about-content p { margin: 0 0 8px; font-size: 0.9rem; line-height: 1.55; color: var(--text); }
 .backup-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
 .btn-file-label { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
-#import-result { margin-top: 8px; }
+#import-result, #export-result { margin-top: 8px; font-size: 0.82rem; color: var(--brand); font-weight: 650; }
+#import-result.err { color: var(--red); }
+.backup-alt { margin-top: 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+.backup-alt summary { padding: 10px 12px; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); cursor: pointer; list-style: none; background: var(--surface-2); }
+.backup-alt summary::-webkit-details-marker { display: none; }
+.backup-alt-body { display: flex; flex-direction: column; gap: 8px; padding: 12px; align-items: flex-start; }
+.backup-alt-body textarea { width: 100%; padding: 10px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: 0.8rem; background: var(--card-bg); color: var(--text); font-family: ui-monospace, Menlo, monospace; }
 
 .guide-intro { font-size: 0.9rem; color: var(--text-muted); margin: 0 0 12px; }
 .guide-accordion { display: flex; flex-direction: column; gap: 8px; }

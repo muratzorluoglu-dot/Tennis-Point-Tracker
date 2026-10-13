@@ -1590,45 +1590,102 @@
   // data between a coach's own devices is a manual export-file/import-file
   // round trip: download the JSON on one device, send it to yourself
   // however's convenient, then import it on the other device.
-  $("#btn-export-data").addEventListener("click", () => {
-    const payload = {
+  function backupJson() {
+    return JSON.stringify({
       appVersion: "tenis-tracker",
       exportedAt: new Date().toISOString(),
       matches: Storage.loadAll(),
       players: Players.loadAll(),
-    };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `tenis-tracker-yedek-${new Date().toISOString().slice(0, 10)}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    }, null, 2);
+  }
+
+  // Phones and the installed home-screen app can't reliably "download" a blob link, so on a phone the
+  // file goes through the native share sheet (Save to Files / WhatsApp / Mail / AirDrop). Elsewhere it's
+  // a normal download. If neither works, the copy/paste box below always does.
+  $("#btn-export-data").addEventListener("click", async () => {
+    const result = $("#export-result");
+    const json = backupJson();
+    const filename = `tenis-tracker-yedek-${new Date().toISOString().slice(0, 10)}.json`;
+    const done = () => { result.textContent = t("exportDone"); };
+
+    try {
+      const file = new File([json], filename, { type: "application/json" });
+      if ((isIOS || isAndroid) && navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: filename });
+        done();
+        return;
+      }
+    } catch (err) {
+      if (err && err.name === "AbortError") return; // user closed the share sheet
+    }
+
+    try {
+      const dl = window.claude && window.claude.use ? await window.claude.use("downloads") : null;
+      if (dl) { await dl.save({ filename, data: json }); done(); return; }
+    } catch (_) { /* not available in this view */ }
+
+    try {
+      const url = URL.createObjectURL(new Blob([json], { type: "application/json" }));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+      done();
+    } catch (_) {
+      result.textContent = t("exportFailed");
+      $("#backup-alt").open = true;
+    }
   });
+
+  $("#btn-backup-copy").addEventListener("click", async () => {
+    const result = $("#export-result");
+    const json = backupJson();
+    try {
+      await navigator.clipboard.writeText(json);
+      result.textContent = t("backupCopied");
+    } catch (_) {
+      const box = $("#f-import-text");
+      box.value = json;
+      box.select();
+      result.textContent = t("backupSelectCopy");
+    }
+  });
+
+  // Upsert by id: safe to import repeatedly, and re-importing an updated backup from the
+  // same device just refreshes those records.
+  function importBackupText(text) {
+    const resultEl = $("#import-result");
+    try {
+      const data = JSON.parse(text);
+      if (!data || (!Array.isArray(data.matches) && !Array.isArray(data.players))) throw new Error("invalid backup shape");
+      (data.players || []).forEach((p) => Players.upsert(p));
+      (data.matches || []).forEach((m) => Storage.upsert(m));
+      resultEl.classList.remove("err");
+      resultEl.textContent = t("importSuccess", { matches: (data.matches || []).length, players: (data.players || []).length });
+      renderHome();
+      return true;
+    } catch (err) {
+      resultEl.classList.add("err");
+      resultEl.textContent = t("importError");
+      return false;
+    }
+  }
 
   $("#f-import-data").addEventListener("change", (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    const resultEl = $("#import-result");
     const reader = new FileReader();
-    reader.onload = (ev) => {
-      try {
-        const data = JSON.parse(ev.target.result);
-        if (!data || (!Array.isArray(data.matches) && !Array.isArray(data.players))) throw new Error("invalid backup shape");
-        // Upsert by id: safe to import repeatedly, and re-importing an
-        // updated backup from the same device just refreshes those records.
-        (data.players || []).forEach((p) => Players.upsert(p));
-        (data.matches || []).forEach((m) => Storage.upsert(m));
-        resultEl.textContent = t("importSuccess", { matches: (data.matches || []).length, players: (data.players || []).length });
-        renderHome();
-      } catch (err) {
-        resultEl.textContent = t("importError");
-      }
-    };
+    reader.onload = (ev) => importBackupText(ev.target.result);
+    reader.onerror = () => { $("#import-result").textContent = t("importError"); };
     reader.readAsText(file);
     e.target.value = ""; // allow importing the same filename again later
+  });
+
+  $("#btn-import-text").addEventListener("click", () => {
+    if (importBackupText($("#f-import-text").value.trim())) $("#f-import-text").value = "";
   });
 
   // ---------- LIVE SHARE (coach side) ----------

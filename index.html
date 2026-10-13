@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="Tennis Tracker" />
-<link rel="stylesheet" href="css/style.css?v=22" />
+<link rel="stylesheet" href="css/style.css?v=23" />
 </head>
 <body>
 
@@ -139,10 +139,19 @@
         <button type="button" class="btn btn-primary" id="btn-export-data">⬇️ <span data-i18n="exportData">Export Backup</span></button>
         <label class="btn btn-ghost btn-file-label">
           ⬆️ <span data-i18n="importData">Import Backup</span>
-          <input type="file" accept="application/json" id="f-import-data" class="hidden">
+          <input type="file" accept=".json,application/json,text/plain" id="f-import-data" class="hidden">
         </label>
       </div>
+      <div id="export-result" class="meta"></div>
       <div id="import-result" class="meta"></div>
+      <details class="backup-alt" id="backup-alt">
+        <summary data-i18n="backupAltTitle">Trouble with files? Copy &amp; paste instead</summary>
+        <div class="backup-alt-body">
+          <button type="button" id="btn-backup-copy" class="btn btn-ghost btn-sm" data-i18n="backupCopy">Copy backup text</button>
+          <textarea id="f-import-text" rows="3" data-i18n-placeholder="backupPastePlaceholder" placeholder="Paste backup text here"></textarea>
+          <button type="button" id="btn-import-text" class="btn btn-ghost btn-sm" data-i18n="backupPasteImport">Import pasted text</button>
+        </div>
+      </details>
     </div>
     <div class="single-action">
       <button type="button" class="btn btn-ghost btn-large" data-nav="home" data-i18n="backToMenu">Back to Menu</button>
@@ -403,15 +412,15 @@
 
 </main>
 
-<script src="js/i18n.js?v=22"></script>
-<script src="js/scoring.js?v=22"></script>
-<script src="js/storage.js?v=22"></script>
-<script src="js/court.js?v=22"></script>
-<script src="js/export.js?v=22"></script>
-<script src="js/ai-review.js?v=22"></script>
-<script src="js/live-share.js?v=22"></script>
-<script src="js/qrcode.js?v=22"></script>
-<script src="js/app.js?v=22"></script>
+<script src="js/i18n.js?v=23"></script>
+<script src="js/scoring.js?v=23"></script>
+<script src="js/storage.js?v=23"></script>
+<script src="js/court.js?v=23"></script>
+<script src="js/export.js?v=23"></script>
+<script src="js/ai-review.js?v=23"></script>
+<script src="js/live-share.js?v=23"></script>
+<script src="js/qrcode.js?v=23"></script>
+<script src="js/app.js?v=23"></script>
 <script>
   if ("serviceWorker" in navigator) {
     // When a new version takes over, reload once so it shows immediately - but only from the home
