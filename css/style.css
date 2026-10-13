@@ -423,6 +423,12 @@ button, input, select, textarea { font-family: inherit; color: inherit; }
 .watch-mode #view-live .live-actions { grid-template-columns: repeat(2, 1fr); }
 @media (prefers-reduced-motion: reduce) { .watch-dot.on { animation: none; } .btn, .btn-tap-square, .match-item, .home-menu-item { transition: none; } }
 
+.update-banner {
+  position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 50;
+  background: var(--ball); color: var(--ball-ink); border: none; border-radius: 999px;
+  padding: 11px 20px; font-size: 0.85rem; font-weight: 800; box-shadow: 0 10px 24px -8px rgba(0, 0, 0, 0.5); cursor: pointer;
+}
+
 /* Point log table */
 .table-scroll { overflow-x: auto; border-radius: 12px; }
 table { border-collapse: collapse; width: 100%; font-size: 0.78rem; }

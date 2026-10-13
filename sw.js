@@ -1,4 +1,4 @@
-const CACHE_NAME = "tennis-tracker-v19";
+const CACHE_NAME = "tennis-tracker-v20";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -42,6 +42,6 @@ self.addEventListener("fetch", (event) => {
         }
         return response;
       })
-      .catch(() => caches.match(event.request))
+      .catch(() => caches.match(event.request, { ignoreSearch: true }))
   );
 });

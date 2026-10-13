@@ -1670,7 +1670,8 @@
   function renderLiveSharePanel() {
     const supported = canBroadcast();
     $("#live-share-unsupported").classList.toggle("hidden", supported);
-    $("#btn-live-share-open").href = LIVE_PAGES_URL;
+    // A fresh timestamp makes the browser fetch the newest page instead of an old cached copy.
+    $("#btn-live-share-open").href = `${LIVE_PAGES_URL}?t=${Date.now()}`;
     if (!supported) {
       $("#live-share-idle").classList.add("hidden");
       $("#live-share-active").classList.add("hidden");
