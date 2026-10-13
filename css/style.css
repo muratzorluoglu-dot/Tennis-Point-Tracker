@@ -385,7 +385,11 @@ button, input, select, textarea { font-family: inherit; color: inherit; }
 .action-btn-top:first-child { flex: 0 0 auto; }
 .live-top-actions .action-btn-top:not(:first-child) { flex: 1; }
 .action-btn-top.sharing { border-color: var(--red); color: var(--red); }
-.action-btn-top.sharing::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--red); }
+.action-btn-top.sharing::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--red); animation: watch-pulse 1.6s ease-in-out infinite; }
+/* While sharing, the button shrinks to just a red dot + dish icon so it takes no room */
+.live-top-actions .action-btn-top.sharing { flex: 0 0 auto; padding: 9px 12px; }
+.action-btn-top.sharing > span { display: none; }
+@media (prefers-reduced-motion: reduce) { .action-btn-top.sharing::before { animation: none; } }
 
 /* Live score sharing: coach panel + read-only viewer */
 .live-share-panel { margin-bottom: 8px; }

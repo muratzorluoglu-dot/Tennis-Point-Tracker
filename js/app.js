@@ -459,6 +459,7 @@
 
   // ---------- LIVE: point entry draft (auto-saves as soon as the minimum is known) ----------
   $$("[data-serve]").forEach(btn => btn.addEventListener("click", () => {
+    $("#live-share-panel").classList.add("hidden");
     draft = emptyDraft();
     draft.serve = btn.dataset.serve;
     if (draft.serve === "DF") { commitPoint(); return; }
@@ -1679,6 +1680,7 @@
     $("#live-share-idle").classList.toggle("hidden", active);
     $("#live-share-active").classList.toggle("hidden", !active);
     $("#btn-live-share").classList.toggle("sharing", active);
+    $("#btn-live-share").title = t("liveShare");
     if (!active) return;
     const status = publisherStatus.error ? t("liveShareOffline") : publisherStatus.pending ? t("liveShareSending") : t("liveShareOn");
     const el = $("#live-share-status");
@@ -1701,6 +1703,8 @@
     startPublisher();
     persist();
     renderLiveSharePanel();
+    // Keep the scoring screen clear: once sharing runs, only the small live badge stays on screen.
+    $("#live-share-panel").classList.add("hidden");
   });
   $("#btn-live-share-stop").addEventListener("click", () => {
     if (publisher) publisher.stop();

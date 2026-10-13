@@ -222,27 +222,29 @@ const LiveShare = (function () {
         handlers.onStatus({ connected: false });
       }
     }
-    // ntfy's cache can lag a moment behind a publish, so a slow poll runs alongside the live
-    // stream as a safety net (duplicates are dropped by message id); it speeds up if the stream drops.
-    function setPollEvery(ms) {
-      if (closed) return;
-      clearInterval(pollTimer);
-      pollTimer = setInterval(pollOnce, ms);
+    // ntfy's cache can lag a moment behind a publish, so two catch-up polls run right after joining
+    // (duplicates are dropped by message id). After that the live stream carries everything, so a
+    // connected viewer makes no further requests - many viewers (even on one Wi-Fi) stay under ntfy's
+    // per-IP request limits. Polling only resumes, every 5 s, while the stream is down.
+    function startPoll() {
+      if (pollTimer || closed) return;
+      pollOnce();
+      pollTimer = setInterval(pollOnce, 5000);
     }
-    function startPoll() { pollOnce(); setPollEvery(5000); }
+    function stopPoll() { clearInterval(pollTimer); pollTimer = null; }
+    const catchUps = [];
 
     if (typeof EventSource === "undefined") {
       startPoll();
     } else {
       es = new EventSource(`${RELAY}/${topic}/sse?since=all`);
-      es.onopen = () => { setPollEvery(15000); handlers.onStatus({ connected: true }); };
+      es.onopen = () => { stopPoll(); handlers.onStatus({ connected: true }); };
       es.onmessage = (ev) => ingest(ev.data);
       es.onerror = () => { handlers.onStatus({ connected: false }); startPoll(); };
-      setPollEvery(15000);
-      setTimeout(pollOnce, 3000);
+      catchUps.push(setTimeout(pollOnce, 3000), setTimeout(pollOnce, 12000));
     }
 
-    return { close() { closed = true; clearInterval(pollTimer); if (es) es.close(); } };
+    return { close() { closed = true; stopPoll(); catchUps.forEach(clearTimeout); if (es) es.close(); } };
   }
 
   return { newTopic, isValidTopic, encodePoint, decodePoint, metaFromEntry, createPublisher, createReplayer, subscribe };
