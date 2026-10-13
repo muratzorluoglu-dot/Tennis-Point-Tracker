@@ -52,6 +52,12 @@
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
+/* Fast repeated taps (rally counter!) must never trigger iOS double-tap zoom or text selection */
+html, body, button, a, summary, label, select, input { touch-action: manipulation; }
+button, .btn, .action-btn, .action-btn-top, .home-menu-item, .match-item, .filter-chip {
+  -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+}
+
 body {
   margin: 0;
   font-family: ui-rounded, "SF Pro Rounded", -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
@@ -67,7 +73,7 @@ button, input, select, textarea { font-family: inherit; color: inherit; }
 .app-header {
   background: var(--brand-dark);
   color: white;
-  padding: 10px 14px;
+  padding: 7px 12px;
   position: sticky;
   top: 0;
   z-index: 10;
@@ -86,7 +92,7 @@ button, input, select, textarea { font-family: inherit; color: inherit; }
 }
 .lang-btn.active { background: var(--ball); color: var(--ball-ink); }
 
-#app { max-width: 480px; margin: 0 auto; padding: 12px; padding-bottom: 20px; }
+#app { max-width: 480px; margin: 0 auto; padding: 10px; padding-bottom: 16px; }
 
 .hidden { display: none !important; }
 
@@ -271,28 +277,28 @@ button, input, select, textarea { font-family: inherit; color: inherit; }
 .scoreboard {
   background: linear-gradient(155deg, #0c4a32 0%, #072d1f 70%, #051c14 100%);
   color: white;
-  border-radius: 22px;
-  padding: 14px 14px 12px;
-  box-shadow: 0 16px 30px -18px rgba(5, 30, 20, 0.9);
+  border-radius: 18px;
+  padding: 7px 12px 6px;
+  box-shadow: 0 12px 24px -16px rgba(5, 30, 20, 0.9);
 }
-.scoreboard .format-label { font-size: 0.64rem; opacity: 0.7; text-align: center; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: 0.03em; }
-.scoreboard table { border-collapse: separate !important; border-spacing: 0 5px; }
+.scoreboard .format-label { font-size: 0.58rem; opacity: 0.65; text-align: center; margin-bottom: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: 0.03em; }
+.scoreboard table { border-collapse: separate !important; border-spacing: 0 3px; }
 .scoreboard tr { background: transparent !important; }
-.scoreboard td { border: none; padding: 0; text-align: center; font-size: 1.15rem; font-weight: 800; font-variant-numeric: tabular-nums; }
-.scoreboard td:not(.player-name) { width: 2.3rem; background: rgba(255,255,255,0.1); border-radius: 9px; padding: 5px 0; }
-.scoreboard td.player-name { padding: 6px 4px; }
-.scoreboard .player-name { font-weight: 750; font-size: 1rem; }
+.scoreboard td { border: none; padding: 0; text-align: center; font-size: 1rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.scoreboard td:not(.player-name) { width: 2rem; background: rgba(255,255,255,0.1); border-radius: 8px; padding: 2px 0; }
+.scoreboard td.player-name { padding: 2px 4px; }
+.scoreboard .player-name { font-weight: 750; font-size: 0.95rem; }
 .scoreboard .serving::before { content: "🎾 "; }
 .scoreboard .point-score {
-  font-size: 2.7rem; font-weight: 900; text-align: center; margin: 6px 0 2px; color: var(--ball);
+  font-size: 1.9rem; font-weight: 900; text-align: center; margin: 1px 0 0; color: var(--ball);
   letter-spacing: 0.02em; font-variant-numeric: tabular-nums; line-height: 1.1;
 }
 .scoreboard .stakes-label {
-  text-align: center; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase;
-  color: var(--ball-ink); background: var(--ball); border-radius: 999px; padding: 3px 12px;
-  display: table; margin: 2px auto 4px;
+  text-align: center; font-size: 0.66rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--ball-ink); background: var(--ball); border-radius: 999px; padding: 1px 10px;
+  display: table; margin: 1px auto 2px;
 }
-.scoreboard .sub-label { font-size: 0.7rem; text-align: center; opacity: 0.75; letter-spacing: 0.04em; }
+.scoreboard .sub-label { font-size: 0.64rem; text-align: center; opacity: 0.75; letter-spacing: 0.04em; }
 
 #btn-swap-server { display: block; margin: 6px auto 0; }
 .scoreboard .match-winner-banner {
@@ -301,9 +307,13 @@ button, input, select, textarea { font-family: inherit; color: inherit; }
 }
 
 /* ============ Point entry ============ */
-.point-entry { display: flex; flex-direction: column; gap: 5px; padding: 10px; }
+.point-entry { display: flex; flex-direction: column; gap: 3px; padding: 8px; margin-top: 6px; }
 .point-entry .step { margin: 0; }
-.point-entry .btn-row { margin: 5px 0; }
+.point-entry .btn-row { margin: 3px 0; gap: 6px; }
+.point-entry .btn-choice { padding: 9px 8px; }
+.point-entry .btn-choice-sm { padding: 8px 6px; }
+.point-entry .btn-ace { padding: 6px; }
+.point-entry .btn-winner { padding: 13px 10px; }
 .step-title { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 4px; }
 .step-title-sm { font-size: 0.66rem; font-weight: 800; color: var(--text-muted); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.08em; }
 .checkbox-line { display: flex; align-items: center; gap: 6px; font-size: 0.95rem; }
@@ -314,7 +324,7 @@ button, input, select, textarea { font-family: inherit; color: inherit; }
 .outcome-stack { flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 0; overflow: hidden; }
 .btn-outcome {
   flex: 1; border: none; border-radius: 14px; color: white; font-weight: 800;
-  font-size: 0.82rem; padding: 13px 6px; text-align: center; min-width: 0;
+  font-size: 0.82rem; padding: 11px 6px; text-align: center; min-width: 0;
   display: flex; align-items: center; justify-content: center; letter-spacing: 0.01em;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   box-shadow: 0 8px 16px -10px rgba(0, 0, 0, 0.55);
@@ -326,7 +336,7 @@ button, input, select, textarea { font-family: inherit; color: inherit; }
 
 /* Rally tap counter: a tall, square, thumb-friendly button for counting shots live as the point happens.
    The reset control lives up in the Ace row instead, so the square can use the stack's full height. */
-.rally-tap-col { display: flex; width: 128px; flex: 0 0 128px; }
+.rally-tap-col { display: flex; width: 116px; flex: 0 0 116px; }
 .btn-tap-square {
   flex: 1; background: linear-gradient(150deg, var(--brand), var(--brand-dark)); color: white; font-weight: 800;
   border-radius: 18px; display: flex; flex-direction: column; align-items: center;
@@ -335,7 +345,7 @@ button, input, select, textarea { font-family: inherit; color: inherit; }
 }
 .btn-tap-square { transition: transform 0.06s ease-out; }
 .btn-tap-square:active { transform: scale(0.94); }
-.btn-tap-square #rally-tap-count { font-size: 2.6rem; font-weight: 900; line-height: 1; font-variant-numeric: tabular-nums; }
+.btn-tap-square #rally-tap-count { font-size: 2.3rem; font-weight: 900; line-height: 1; font-variant-numeric: tabular-nums; }
 .btn-tap-square.active { box-shadow: inset 0 0 0 3px var(--ball), 0 12px 22px -12px var(--brand); }
 .btn-tap-reset {
   flex: 0 0 46px; border: 1.5px solid var(--border); background: var(--card-bg);
@@ -355,14 +365,14 @@ button, input, select, textarea { font-family: inherit; color: inherit; }
 .panel-head-actions { display: flex; gap: 6px; flex-wrap: wrap; }
 
 /* Zone picker - large target area, easy to tap accurately courtside */
-.zone-svg { width: 100%; max-width: 280px; display: block; margin: 0 auto; }
+.zone-svg { width: 100%; max-width: 220px; display: block; margin: 0 auto; }
 .court-outline { fill: var(--surface-2); stroke: var(--brand-dark); stroke-width: 2; }
 .court-net { stroke: var(--brand-dark); stroke-width: 3; }
 .court-mid { stroke: white; stroke-width: 1; stroke-dasharray: 4 3; opacity: 0.6; }
 .zone-label { fill: white; font-size: 18px; font-weight: 700; pointer-events: none; }
 
 /* Compact icon bottom bar for log/stats/home */
-.live-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+.live-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
 .action-btn {
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
   background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius-sm);
@@ -374,11 +384,11 @@ button, input, select, textarea { font-family: inherit; color: inherit; }
 .action-label { font-size: 0.66rem; font-weight: 700; color: var(--text-muted); }
 
 /* Slim top bar: Undo (always present) + Swap Server (only before the first point) */
-.live-top-actions { display: flex; gap: 8px; margin-bottom: 8px; }
+.live-top-actions { display: flex; gap: 8px; margin-bottom: 6px; }
 .action-btn-top {
   display: flex; align-items: center; justify-content: center; gap: 6px;
   background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius-sm);
-  padding: 9px 12px; font-size: 0.8rem; font-weight: 700; color: var(--text); cursor: pointer; box-shadow: var(--shadow);
+  padding: 6px 12px; font-size: 0.78rem; font-weight: 700; color: var(--text); cursor: pointer; box-shadow: var(--shadow);
 }
 .action-btn-top:active:not(:disabled) { transform: scale(0.97); }
 .action-btn-top:disabled { opacity: 0.4; cursor: not-allowed; }
@@ -387,7 +397,7 @@ button, input, select, textarea { font-family: inherit; color: inherit; }
 .action-btn-top.sharing { border-color: var(--red); color: var(--red); }
 .action-btn-top.sharing::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--red); animation: watch-pulse 1.6s ease-in-out infinite; }
 /* While sharing, the button shrinks to just a red dot + dish icon so it takes no room */
-.live-top-actions .action-btn-top.sharing { flex: 0 0 auto; padding: 9px 12px; }
+.live-top-actions .action-btn-top.sharing { flex: 0 0 auto; padding: 6px 12px; }
 .action-btn-top.sharing > span { display: none; }
 @media (prefers-reduced-motion: reduce) { .action-btn-top.sharing::before { animation: none; } }
 

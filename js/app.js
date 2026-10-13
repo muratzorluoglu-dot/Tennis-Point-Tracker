@@ -1773,6 +1773,8 @@
   }
 
   // ---------- init ----------
+  // iOS Safari ignores user-scalable=no; block pinch-zoom so frantic rally tapping can't zoom the page.
+  document.addEventListener("gesturestart", (e) => e.preventDefault());
   I18N.applyStatic();
   const watchTopic = parseWatchTopic();
   if (watchTopic) { startWatchMode(watchTopic); return; }
