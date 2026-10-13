@@ -149,7 +149,7 @@
     if (!rec) return;
     detachPublisher();
     hydrateMatch(rec);
-    if (state.liveActive && !rec.finished) startPublisher();
+    if (state.liveActive && !rec.finished && canBroadcast()) startPublisher();
     if (rec.finished) {
       renderSummary();
       showView("summary");
@@ -1663,7 +1663,18 @@
     publisherStatus = { pending: 0, error: null };
   }
 
+  // Inside a Claude artifact the page may not reach outside servers, so broadcasting only works from the real web app.
+  function canBroadcast() { return liveBaseUrl() === location.origin + location.pathname; }
+
   function renderLiveSharePanel() {
+    const supported = canBroadcast();
+    $("#live-share-unsupported").classList.toggle("hidden", supported);
+    $("#btn-live-share-open").href = LIVE_PAGES_URL;
+    if (!supported) {
+      $("#live-share-idle").classList.add("hidden");
+      $("#live-share-active").classList.add("hidden");
+      return;
+    }
     const active = !!(state.liveActive && publisher);
     $("#live-share-idle").classList.toggle("hidden", active);
     $("#live-share-active").classList.toggle("hidden", !active);
@@ -1684,6 +1695,7 @@
   });
   $("#btn-live-share-close").addEventListener("click", () => $("#live-share-panel").classList.add("hidden"));
   $("#btn-live-share-start").addEventListener("click", () => {
+    if (!canBroadcast()) return;
     if (!state.liveTopic) state.liveTopic = LiveShare.newTopic();
     state.liveActive = true;
     startPublisher();
