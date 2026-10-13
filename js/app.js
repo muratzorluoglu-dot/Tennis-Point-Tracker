@@ -114,14 +114,14 @@
     }
     list.innerHTML = matches.map(m => {
       const scoreStr = (m.match.sets || []).filter(s => s.winner)
-        .map(s => `${s.p1Games}-${s.p2Games}`).join(", ") || t("inProgress");
+        .map(s => `${s.p1Games}-${s.p2Games}`).join(", ");
       const status = m.finished ? t("finished") : t("inProgress");
       const date = new Date(m.createdAt).toLocaleDateString();
       return `
         <div class="match-item" data-id="${m.id}">
           <div>
             <div><strong>${escapeHtml(m.player1)}</strong> ${t("vs")} <strong>${escapeHtml(m.player2)}</strong></div>
-            <div class="meta">${date} · ${scoreStr} · ${status}</div>
+            <div class="meta">${[date, scoreStr, status].filter(Boolean).join(" · ")}</div>
           </div>
           <button class="btn btn-ghost btn-delete" data-del="${m.id}">${t("delete")}</button>
         </div>`;
