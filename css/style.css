@@ -73,7 +73,8 @@ button, input, select, textarea { font-family: inherit; color: inherit; }
 .app-header {
   background: var(--brand-dark);
   color: white;
-  padding: 7px 12px;
+  /* Installed (home-screen) mode draws under the iPhone status bar / notch: keep the header clear of it */
+  padding: calc(7px + env(safe-area-inset-top, 0px)) calc(12px + env(safe-area-inset-right, 0px)) 7px calc(12px + env(safe-area-inset-left, 0px));
   position: sticky;
   top: 0;
   z-index: 10;
@@ -92,7 +93,12 @@ button, input, select, textarea { font-family: inherit; color: inherit; }
 }
 .lang-btn.active { background: var(--ball); color: var(--ball-ink); }
 
-#app { max-width: 480px; margin: 0 auto; padding: 10px; padding-bottom: 16px; }
+#app {
+  max-width: 480px; margin: 0 auto; padding: 10px;
+  padding-left: calc(10px + env(safe-area-inset-left, 0px));
+  padding-right: calc(10px + env(safe-area-inset-right, 0px));
+  padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+}
 
 .hidden { display: none !important; }
 
@@ -459,7 +465,7 @@ button, input, select, textarea { font-family: inherit; color: inherit; }
 #btn-share-app-wa { text-decoration: none; display: inline-flex; align-items: center; gap: 4px; }
 
 .update-banner {
-  position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 50;
+  position: fixed; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 50;
   background: var(--ball); color: var(--ball-ink); border: none; border-radius: 999px;
   padding: 11px 20px; font-size: 0.85rem; font-weight: 800; box-shadow: 0 10px 24px -8px rgba(0, 0, 0, 0.5); cursor: pointer;
 }
