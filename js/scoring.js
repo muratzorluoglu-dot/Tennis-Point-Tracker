@@ -74,13 +74,23 @@ class TennisMatch {
   }
 
   /**
-   * Change who is serving the current game. Only allowed before the first
-   * point of the match has been recorded (i.e. the coach picked wrong on
-   * the setup screen and wants to fix it before play actually starts).
+   * Make `player` the one serving the NEXT point, at any moment (wrong starting server on the setup
+   * screen, a missed game, a forgotten tiebreak rotation...). Points already logged keep the server
+   * they were recorded with; from here on serve rotation continues from the corrected server. The
+   * change is a history step, so Undo reverts it. Returns false if nothing changed.
    */
   setServer(player) {
-    if (this.pointLog.length > 0) return false;
-    this.currentGame.server = player;
+    if (this.matchWinner || (player !== 1 && player !== 2)) return false;
+    if (this.currentServer() === player) return false;
+    this._history.push(this._snapshot());
+    const g = this.currentGame;
+    if (!g.tiebreak) {
+      g.server = player;
+    } else {
+      // In a tiebreak `game.server` is the FIRST server; pick it so the rotation gives `player` now.
+      const other = player === 1 ? 2 : 1;
+      g.server = Math.floor((g.p1 + g.p2 + 1) / 2) % 2 === 0 ? player : other;
+    }
     return true;
   }
 

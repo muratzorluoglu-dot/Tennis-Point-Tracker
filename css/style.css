@@ -312,7 +312,6 @@ button, input, select, textarea { font-family: inherit; color: inherit; }
 }
 .scoreboard .sub-label { font-size: 0.64rem; text-align: center; opacity: 0.75; letter-spacing: 0.04em; }
 
-#btn-swap-server { display: block; margin: 6px auto 0; }
 .scoreboard .match-winner-banner {
   margin-top: 8px; background: var(--ball); color: var(--ball-ink); text-align: center;
   padding: 8px; border-radius: 12px; font-weight: 800; font-size: 0.88rem;

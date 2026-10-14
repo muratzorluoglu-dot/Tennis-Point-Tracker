@@ -466,7 +466,7 @@
     }
     $("#scoreboard").innerHTML = html;
 
-    $("#btn-swap-server").classList.toggle("hidden", m.pointLog.length > 0 || m.isMatchOver());
+    $("#btn-swap-server").classList.toggle("hidden", m.isMatchOver());
   }
 
   // ---------- LIVE: point entry draft (auto-saves as soon as the minimum is known) ----------
