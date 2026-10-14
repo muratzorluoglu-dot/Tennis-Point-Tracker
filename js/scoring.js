@@ -62,7 +62,16 @@ class TennisMatch {
   get currentGame() { return this.currentSet.games[this.currentSet.games.length - 1]; }
   get isTiebreak() { return this.currentGame.tiebreak; }
 
-  currentServer() { return this.currentGame.server; }
+  // Who serves the NEXT point. In a normal game that is the game's server. In a tiebreak
+  // (including the 10-point match tiebreak) `game.server` is the player who served FIRST;
+  // from there the serve changes after the 1st point and then after every 2 points:
+  // first, other, other, first, first, other, other, ...
+  currentServer() {
+    const g = this.currentGame;
+    if (!g.tiebreak) return g.server;
+    const other = g.server === 1 ? 2 : 1;
+    return Math.floor((g.p1 + g.p2 + 1) / 2) % 2 === 0 ? g.server : other;
+  }
 
   /**
    * Change who is serving the current game. Only allowed before the first
@@ -254,7 +263,11 @@ class TennisMatch {
           this.matchWinner = setsWon1 === this.setsToWin ? 1 : 2;
           this.matchEndTime = new Date().toISOString();
         } else {
-          const nextServer = returner; // serve rotation continues into the next set
+          // Serve rotation continues into the next set: normally the player who just received
+          // serves first. After a tiebreak the serve could be with either player on the last
+          // point, so the rule applies instead: whoever served FIRST in the tiebreak receives
+          // first in the next set, i.e. the other player serves the opening game.
+          const nextServer = gameBefore.tiebreak ? (gameBefore.server === 1 ? 2 : 1) : returner;
           const ns = makeSet();
           ns.startTime = new Date().toISOString();
           const isDecidingSet = (this.sets.length + 1) === this.bestOf;
