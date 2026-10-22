@@ -112,29 +112,56 @@
     if (dest === "home") { showView("home"); renderHome(); }
   }));
   $("#btn-nav-about").addEventListener("click", () => { showView("about"); renderShareCard(); });
-  $("#btn-nav-players").addEventListener("click", () => { showView("players"); renderPlayersList(); resetPlayerForm(); });
+  $("#btn-nav-players").addEventListener("click", () => { showView("players"); closePlayerForm(); playerSearch = ""; $("#f-player-search").value = ""; renderPlayersList(); });
   $("#btn-nav-player-stats").addEventListener("click", () => { showView("playerStats"); renderPlayerStatsSelect(true); });
 
   // ---------- HOME ----------
+  // "6-4  3-2": every set so far, including the one being played
+  function setsScoreText(rec) {
+    return (rec.match.sets || []).map(s => `${s.p1Games}-${s.p2Games}`).join("  ");
+  }
+
+  function renderContinueCard(matches) {
+    const card = $("#continue-card");
+    const live = matches.filter(m => !m.finished)
+      .sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt))[0];
+    if (!live) { card.classList.add("hidden"); card.innerHTML = ""; return; }
+    card.classList.remove("hidden");
+    card.innerHTML = `
+      <button type="button" class="continue-card" data-continue="${live.id}">
+        <div class="continue-body">
+          <span class="continue-live">${t("inProgress")}</span>
+          <div class="continue-names">${escapeHtml(live.player1)} ${t("vs")} ${escapeHtml(live.player2)}</div>
+          <div class="continue-score">${escapeHtml([setsScoreText(live), live.tournament].filter(Boolean).join(" · "))}</div>
+        </div>
+        <span class="continue-go">${t("resumeBtn")} →</span>
+      </button>`;
+    card.querySelector("[data-continue]").addEventListener("click", () => openMatch(live.id));
+  }
+
   function renderHome() {
     const list = $("#match-list");
     const matches = Storage.loadAll();
+    renderContinueCard(matches);
     if (!matches.length) {
-      list.innerHTML = `<div class="empty-hint">${t("noMatchesYet")}</div>`;
+      list.innerHTML = `<div class="empty-card"><span class="empty-icon">🎾</span><strong>${t("noMatchesCtaTitle")}</strong><br>${t("noMatchesCtaBody")}</div>`;
       return;
     }
     list.innerHTML = matches.map(m => {
-      const scoreStr = (m.match.sets || []).filter(s => s.winner)
-        .map(s => `${s.p1Games}-${s.p2Games}`).join(", ");
-      const status = m.finished ? t("finished") : t("inProgress");
+      const status = m.finished
+        ? `<span class="chip chip-done">${t("finished")}</span>`
+        : `<span class="chip chip-live">${t("inProgress")}</span>`;
       const date = new Date(m.createdAt).toLocaleDateString();
+      const w1 = m.finished && m.match.matchWinner === 1 ? " winner-name" : "";
+      const w2 = m.finished && m.match.matchWinner === 2 ? " winner-name" : "";
       return `
         <div class="match-item" data-id="${m.id}">
-          <div>
-            <div><strong>${escapeHtml(m.player1)}</strong> ${t("vs")} <strong>${escapeHtml(m.player2)}</strong></div>
-            <div class="meta">${[date, scoreStr, status].filter(Boolean).join(" · ")}</div>
+          <div class="match-item-main">
+            <div><strong class="${w1.trim()}">${escapeHtml(m.player1)}</strong> ${t("vs")} <strong class="${w2.trim()}">${escapeHtml(m.player2)}</strong></div>
+            <div class="match-score">${escapeHtml(setsScoreText(m))}${status}</div>
+            <div class="meta">${escapeHtml([date, m.tournament].filter(Boolean).join(" · "))}</div>
           </div>
-          <button class="btn btn-ghost btn-delete" data-del="${m.id}">${t("delete")}</button>
+          <button type="button" class="icon-btn btn-delete" data-del="${m.id}" aria-label="${t("delete")}">🗑</button>
         </div>`;
     }).join("");
 
@@ -1198,11 +1225,37 @@
   function resetPlayerForm() {
     $("#form-player").reset();
     $("#f-player-id").value = "";
-    $("#btn-player-cancel-edit").classList.add("hidden");
     pendingPhotoDataUrl = null;
     $("#photo-preview-row").classList.add("hidden");
+    $("#player-more-details").open = false;
+    $("#player-rank-details").open = false;
   }
-  $("#btn-player-cancel-edit").addEventListener("click", resetPlayerForm);
+
+  // The roster list comes first; the long form only opens on "Add player" / "Edit".
+  function openPlayerForm(titleKey) {
+    $("#player-form-title").textContent = t(titleKey);
+    $("#form-player").classList.remove("hidden");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+  function closePlayerForm() {
+    resetPlayerForm();
+    $("#form-player").classList.add("hidden");
+  }
+  $("#btn-player-add").addEventListener("click", () => {
+    resetPlayerForm();
+    openPlayerForm("addPlayer");
+    $("#f-player-name").focus({ preventScroll: true });
+  });
+  $("#btn-player-cancel-edit").addEventListener("click", closePlayerForm);
+
+  let toastTimer = null;
+  function showToast(msg) {
+    const el = $("#toast");
+    el.textContent = msg;
+    el.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove("show"), 2200);
+  }
 
   function startEditPlayer(id) {
     const p = Players.get(id);
@@ -1225,38 +1278,100 @@
     $("#f-player-ikort-points").value = p.ikortPoints || "";
     pendingPhotoDataUrl = null;
     if (p.photo) showPhotoPreview(p.photo); else $("#photo-preview-row").classList.add("hidden");
-    $("#btn-player-cancel-edit").classList.remove("hidden");
-    // The form sits above the list, so scroll up to make it obvious the form
-    // just filled in with this player's data (especially with a long roster).
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    // Open the optional sections that already hold data so nothing looks missing.
+    $("#player-more-details").open = !!(p.club || p.hand || p.backhand || p.gender || p.notes);
+    $("#player-rank-details").open = !!(p.itfRank || p.itfPoints || p.teRank || p.tePoints || p.utrRating || p.ikortRank || p.ikortPoints);
+    openPlayerForm("editPlayer");
   }
 
+  function initialsOf(name) {
+    const parts = String(name || "?").trim().split(/\s+/).filter(Boolean);
+    return ((parts[0] || "?")[0] + (parts.length > 1 ? parts[parts.length - 1][0] : "")).toUpperCase();
+  }
+
+  function playerAvatarHtml(p, withFlag = true) {
+    const flag = withFlag ? flagEmoji(p.country) : "";
+    const inner = p.photo
+      ? `<img class="player-avatar" src="${p.photo}" alt="">`
+      : `<div class="player-avatar player-avatar-flag player-initials">${escapeHtml(initialsOf(p.name))}</div>`;
+    return `<span class="player-avatar-wrap">${inner}${flag ? `<span class="player-avatar-flagbadge">${flag}</span>` : ""}</span>`;
+  }
+
+  function formDotsHtml(results) {
+    const last = results.slice(-5);
+    return last.length ? `<span class="form-dots" aria-label="${t("formLabel")}">${last.map(r => `<i class="fd ${r.won ? "w" : "l"}"></i>`).join("")}</span>` : "";
+  }
+
+  // Everything the roster, team board, hero and badges need about one player, from the saved matches.
+  function playerSummary(p) {
+    const recs = Storage.loadAll()
+      .filter(r => r.player1Id === p.id || r.player2Id === p.id)
+      .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+    const slotOf = (r) => (r.player1Id === p.id ? 1 : 2);
+    const finished = recs.filter(r => r.finished);
+    const results = finished.map(r => ({ won: r.match.matchWinner === slotOf(r) }));
+    const wins = results.filter(r => r.won).length;
+    const comebacks = finished.filter(r => {
+      const first = (r.match.sets || [])[0];
+      return r.match.matchWinner === slotOf(r) && first && first.winner && first.winner !== slotOf(r);
+    }).length;
+    const entries = computePlayerMatchEntries(p.id);
+    const agg = entries.length ? computeAggregateStats(entries) : null;
+    return {
+      player: p, recs, finished, results, wins, losses: finished.length - wins, comebacks, agg,
+      career: computeCareerStats(p.id),
+      matches: recs.length,
+      winPct: finished.length ? (wins / finished.length) * 100 : 0,
+      pointsPct: agg ? agg.pointsWonPct : 0,
+      aces: agg ? agg.aceCount : 0,
+      bigPct: agg && agg.pressurePointsPlayed ? agg.pressurePointsWonPct : 0,
+    };
+  }
+
+  function badgesFor(s) {
+    const a = s.agg || {};
+    return Insights.computeBadges({
+      wins: s.wins, results: s.results, comebacks: s.comebacks,
+      aces: a.aceCount || 0, servicePts: a.servicePointsPlayed || 0, firstServePct: a.firstServeInPct || 0,
+      bigPts: a.pressurePointsPlayed || 0, bigPct: a.pressurePointsWonPct || 0,
+      tbWon: s.career.tiebreaksWon, tbPlayed: s.career.tiebreaksPlayed, tbWinPct: s.career.tiebreakWinPct,
+      winners: a.winnersCount || 0, unforcedErrors: a.unforcedErrorsCount || 0,
+      outcomeTagged: (a.winnersCount || 0) + (a.unforcedErrorsCount || 0) + (a.forcedErrorsCount || 0),
+    }, t);
+  }
+
+  let playerSearch = "";
   function renderPlayersList() {
     const list = $("#player-list");
-    const players = Players.loadAll();
-    if (!players.length) { list.innerHTML = `<div class="empty-hint">${t("noPlayersYet")}</div>`; return; }
+    const all = Players.loadAll();
+    $("#f-player-search").classList.toggle("hidden", all.length <= 5);
+    if (!all.length) {
+      list.innerHTML = `<div class="empty-card"><span class="empty-icon">👤</span><strong>${t("noPlayersCtaTitle")}</strong><br>${t("noPlayersCtaBody")}</div>`;
+      return;
+    }
+    const q = playerSearch.trim().toLowerCase();
+    const players = all.filter(p => !q || p.name.toLowerCase().includes(q))
+      .sort((a, b) => a.name.localeCompare(b.name));
     list.innerHTML = players.map(p => {
-      const flag = flagEmoji(p.country);
       const cat = ageCategoryFor(p.birthYear);
       const metaParts = [p.club, cat, p.hand ? t("playerHand" + capitalize(p.hand)) : null].filter(Boolean);
-      const entries = computePlayerMatchEntries(p.id);
-      const statsLine = entries.length
-        ? t("statsSnapshot", { n: entries.length, pct: Math.round(computeAggregateStats(entries).pointsWonPct) })
-        : "";
-      const avatar = p.photo
-        ? `<img class="player-avatar" src="${p.photo}" alt="">`
-        : `<div class="player-avatar player-avatar-flag">${flag || "👤"}</div>`;
+      const s = playerSummary(p);
+      const chips = [
+        s.finished.length ? `<span class="pchip good">${t("recordShort", { w: s.wins, l: s.losses })}</span>` : "",
+        s.matches ? `<span class="pchip">${t("matchesCount", { n: s.matches })}</span>` : "",
+        formDotsHtml(s.results) ? `<span class="player-card-form">${formDotsHtml(s.results)}</span>` : "",
+      ].filter(Boolean).join("");
       return `
         <div class="match-item player-item" data-id="${p.id}">
-          ${avatar}
+          ${playerAvatarHtml(p)}
           <div class="player-item-info">
-            <div><strong>${escapeHtml(p.name)}</strong>${flag && p.photo ? ` ${flag}` : ""}</div>
+            <div><strong>${escapeHtml(p.name)}</strong></div>
             ${metaParts.length ? `<div class="meta">${metaParts.map(escapeHtml).join(" · ")}</div>` : ""}
-            ${statsLine ? `<div class="meta player-stats-snapshot">${statsLine}</div>` : ""}
+            ${chips ? `<div class="player-chips">${chips}</div>` : ""}
           </div>
           <div class="player-item-actions">
-            <button class="btn btn-ghost btn-sm" data-edit-player="${p.id}">${t("edit")}</button>
-            <button class="btn btn-ghost btn-sm btn-delete" data-del-player="${p.id}">${t("delete")}</button>
+            <button type="button" class="icon-btn" data-edit-player="${p.id}" aria-label="${t("edit")}">✏️</button>
+            <button type="button" class="icon-btn btn-delete" data-del-player="${p.id}" aria-label="${t("delete")}">🗑</button>
           </div>
         </div>`;
     }).join("");
@@ -1269,7 +1384,7 @@
     list.querySelectorAll(".match-item").forEach(el => {
       el.addEventListener("click", (e) => {
         if (e.target.closest(".player-item-actions")) return;
-        startEditPlayer(el.dataset.id);
+        openPlayerStats(el.dataset.id);
       });
     });
     list.querySelectorAll(".btn-delete").forEach(btn => {
@@ -1309,9 +1424,12 @@
       ikortPoints: $("#f-player-ikort-points").value.trim(),
       createdAt: existing ? existing.createdAt : new Date().toISOString(),
     });
-    resetPlayerForm();
+    closePlayerForm();
     renderPlayersList();
+    showToast(t("playerSaved"));
   });
+
+  $("#f-player-search").addEventListener("input", (e) => { playerSearch = e.target.value; renderPlayersList(); });
 
   // Older matches only stored free-text names - link them to a roster player
   // (creating one if needed) so they count toward that player's aggregate stats.
@@ -1526,24 +1644,137 @@
   }
   $("#f-player-stats-select").addEventListener("change", (e) => renderPlayerStatsContent(e.target.value));
 
+  // ---- Team board: the landing view of Player Stats (ranking of the whole roster) ----
+  let teamSort = "winPct";
+
+  function renderTeamBoard() {
+    const board = $("#team-board");
+    const players = Players.loadAll();
+    if (!players.length) {
+      board.innerHTML = `<div class="empty-card"><span class="empty-icon">👤</span><strong>${t("noPlayersCtaTitle")}</strong><br>${t("noPlayersCtaBody")}</div>`;
+      return;
+    }
+    const withMatches = players.map(playerSummary).filter(r => r.matches > 0).map(r => ({ ...r, name: r.player.name }));
+    if (!withMatches.length) {
+      board.innerHTML = `<div class="team-board-head">${t("teamNoData")}</div>`;
+      return;
+    }
+    const sorted = Insights.sortTeam(withMatches, teamSort);
+    const label = t("sort" + capitalize(teamSort));
+    const metric = (r) => {
+      switch (teamSort) {
+        case "matches": return String(r.matches);
+        case "aces": return String(r.aces);
+        case "pointsPct": return pct(r.pointsPct);
+        case "bigPct": return r.agg && r.agg.pressurePointsPlayed ? pct(r.bigPct) : "–";
+        default: return r.finished.length ? pct(r.winPct) : "–";
+      }
+    };
+    const chips = Insights.SORT_KEYS.map(k => `<button type="button" class="sort-chip${k === teamSort ? " active" : ""}" data-sort="${k}">${t("sort" + capitalize(k))}</button>`).join("");
+    const rows = sorted.map((r, i) => `
+      <button type="button" class="team-row${i === 0 ? " rank-1" : ""}" data-pid="${r.player.id}">
+        <span class="team-rank">${i + 1}</span>
+        ${playerAvatarHtml(r.player)}
+        <div class="team-info">
+          <div class="team-name">${escapeHtml(r.player.name)}</div>
+          <div class="team-sub"><span>${r.finished.length ? t("recordShort", { w: r.wins, l: r.losses }) : t("matchesCount", { n: r.matches })}</span>${formDotsHtml(r.results)}</div>
+        </div>
+        <div class="team-metric"><div class="team-metric-num">${metric(r)}</div><div class="team-metric-label">${escapeHtml(label)}</div></div>
+      </button>`).join("");
+    const missing = players.length - withMatches.length;
+    board.innerHTML = `
+      <div class="team-board-head">${t("teamBoardHint")}</div>
+      <div class="sort-chips">${chips}</div>
+      ${rows}
+      ${missing ? `<div class="team-note">${t("teamExcluded", { n: missing })}</div>` : ""}`;
+  }
+
+  $("#team-board").addEventListener("click", (e) => {
+    const chip = e.target.closest("[data-sort]");
+    if (chip) { teamSort = chip.dataset.sort; renderTeamBoard(); return; }
+    const row = e.target.closest("[data-pid]");
+    if (row) openPlayerStats(row.dataset.pid);
+  });
+
+  function openPlayerStats(id) {
+    showView("playerStats");
+    renderPlayerStatsSelect(true);
+    $("#f-player-stats-select").value = id;
+    renderPlayerStatsContent(id);
+    window.scrollTo(0, 0);
+  }
+
+  $("#btn-filters-toggle").addEventListener("click", (e) => {
+    const body = $("#pstats-filters-body");
+    const open = body.classList.toggle("hidden") === false;
+    e.currentTarget.setAttribute("aria-expanded", String(open));
+  });
+
+  $("#player-stats-content").addEventListener("click", (e) => {
+    if (!e.target.closest("#btn-back-team")) return;
+    $("#f-player-stats-select").value = "";
+    renderPlayerStatsContent("");
+    window.scrollTo(0, 0);
+  });
+
+  function playerHeroHtml(s) {
+    const p = s.player;
+    const meta = [flagEmoji(p.country), ageCategoryFor(p.birthYear), p.club].filter(Boolean).join(" · ");
+    const record = s.finished.length
+      ? `<span class="pill">${pct(s.winPct)}</span><span>${t("recordShort", { w: s.wins, l: s.losses })}</span>${formDotsHtml(s.results)}`
+      : `<span>${t("matchesCount", { n: s.matches })}</span>`;
+    return `
+      <button type="button" class="back-to-team" id="btn-back-team">${t("backToTeam")}</button>
+      <div class="player-hero">
+        ${playerAvatarHtml(p, false)}
+        <div>
+          <div class="hero-name">${escapeHtml(p.name)}</div>
+          ${meta ? `<div class="hero-meta">${escapeHtml(meta)}</div>` : ""}
+          <div class="hero-record">${record}</div>
+        </div>
+      </div>`;
+  }
+
+  function badgesHtml(s) {
+    const list = badgesFor(s);
+    const earned = list.filter(b => b.earned).length;
+    return `
+      <div class="badges-section">
+        <div class="badges-head"><h3>${t("badgesTitle")}</h3><span>${t("badgesEarned", { n: earned, total: list.length })}</span></div>
+        <div class="badges-grid">${list.map(b => `
+          <div class="badge${b.earned ? "" : " locked"}" title="${escapeHtml(b.desc)}">
+            <span class="b-icon">${b.icon}</span>
+            <div class="b-name">${escapeHtml(b.name)}</div>
+            <div class="b-desc">${escapeHtml(b.desc)}</div>
+            ${b.earned ? "" : `<span class="b-progress">${escapeHtml(b.progress)}</span>`}
+          </div>`).join("")}
+        </div>
+      </div>`;
+  }
+
   function renderPlayerStatsContent(playerId) {
     $("#player-stats-ai-wrap").classList.add("hidden");
     $("#player-stats-ai-wrap").innerHTML = "";
     const content = $("#player-stats-content");
     const actions = $("#player-stats-actions");
     const filterPanel = $("#pstats-filters");
+    $("#team-board").classList.toggle("hidden", !!playerId);
     if (!playerId) {
-      content.innerHTML = `<div class="empty-hint">${t("selectPlayerHint")}</div>`;
+      content.innerHTML = "";
       actions.classList.add("hidden");
       filterPanel.classList.add("hidden");
       lastPlayerStatsData = null;
+      renderTeamBoard();
       return;
     }
     filterPanel.classList.remove("hidden");
+    const activeFilters = (playerStatsFilters.dateFrom ? 1 : 0) + (playerStatsFilters.dateTo ? 1 : 0) + playerStatsFilters.surfaces.size + playerStatsFilters.types.size;
+    $("#filters-count").textContent = String(activeFilters);
+    $("#filters-count").classList.toggle("hidden", !activeFilters);
     const player = Players.get(playerId);
     const totalEntries = computePlayerMatchEntries(playerId);
     if (!totalEntries.length) {
-      content.innerHTML = `<div class="empty-hint">${t("noMatchesForPlayer")}</div>`;
+      content.innerHTML = playerHeroHtml(playerSummary(player)) + `<div class="empty-hint">${t("noMatchesForPlayer")}</div>`;
       actions.classList.add("hidden");
       $("#filter-summary").textContent = "";
       lastPlayerStatsData = null;
@@ -1551,8 +1782,10 @@
     }
     const entries = computePlayerMatchEntries(playerId, playerStatsFilters);
     $("#filter-summary").textContent = t("showingMatches", { shown: entries.length, total: totalEntries.length });
+    const summary = playerSummary(player);
+    const topBlock = playerHeroHtml(summary) + badgesHtml(summary);
     if (!entries.length) {
-      content.innerHTML = `<div class="empty-hint">${t("noMatchesForFilters")}</div>`;
+      content.innerHTML = topBlock + `<div class="empty-hint">${t("noMatchesForFilters")}</div>`;
       actions.classList.add("hidden");
       lastPlayerStatsData = null;
       return;
@@ -1562,7 +1795,7 @@
     const title = t("matchesCount", { n: entries.length });
     const card = { playerName: player.name, title, scoreLabel: null, s: agg };
     const career = computeCareerStats(playerId, playerStatsFilters);
-    content.innerHTML = careerStatsPanel(career, player.name) + summaryCard(card.playerName, card.title, card.scoreLabel, card.s, false, "matchTrend");
+    content.innerHTML = topBlock + careerStatsPanel(career, player.name) + summaryCard(card.playerName, card.title, card.scoreLabel, card.s, false, "matchTrend");
     actions.classList.remove("hidden");
     lastPlayerStatsData = { header: { title: player.name, subtitle: title }, cards: [card] };
   }

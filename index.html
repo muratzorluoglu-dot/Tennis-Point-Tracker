@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="Tennis Tracker" />
-<link rel="stylesheet" href="css/style.css?v=26" />
+<link rel="stylesheet" href="css/style.css?v=27" />
 </head>
 <body>
 
@@ -34,10 +34,13 @@
   </div>
 </div>
 
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
 <main id="app">
 
   <!-- HOME -->
   <section id="view-home" class="view">
+    <div id="continue-card" class="hidden"></div>
     <div id="install-banner" class="install-banner hidden">
       <span class="install-banner-icon">📲</span>
       <div class="install-banner-text">
@@ -160,12 +163,18 @@
 
   <!-- PLAYER ENTRY (roster) -->
   <section id="view-players" class="view hidden">
-    <h2 class="section-title" data-i18n="navPlayers">Player Entry</h2>
-    <form id="form-player" class="form card">
+    <div class="panel-head view-head">
+      <h2 class="section-title" style="margin:0;" data-i18n="navPlayers">Player Entry</h2>
+      <button type="button" id="btn-player-add" class="btn btn-primary btn-sm">+ <span data-i18n="addPlayer">Add player</span></button>
+    </div>
+    <form id="form-player" class="form card hidden">
       <input type="hidden" id="f-player-id">
-      <label><span data-i18n="playerFullName">Full Name</span> <input type="text" id="f-player-name" required></label>
-      <label><span data-i18n="birthYear">Birth Year</span> <input type="number" min="1930" max="2030" id="f-player-birthyear" required></label>
-      <label><span data-i18n="country">Country</span> <select id="f-player-country" required></select></label>
+      <h3 id="player-form-title" class="form-title" data-i18n="addPlayer">Add player</h3>
+      <label class="req"><span data-i18n="playerFullName">Full Name</span> <input type="text" id="f-player-name" required autocomplete="off"></label>
+      <div class="form-pair">
+        <label class="req"><span data-i18n="birthYear">Birth Year</span> <input type="number" inputmode="numeric" min="1930" max="2030" id="f-player-birthyear" required></label>
+        <label class="req"><span data-i18n="country">Country</span> <select id="f-player-country" required></select></label>
+      </div>
       <label>
         <span data-i18n="photo">Photo</span>
         <input type="file" accept="image/*" id="f-player-photo">
@@ -174,26 +183,42 @@
         <img id="photo-preview-img" alt="">
         <button type="button" class="btn btn-ghost btn-sm" id="btn-photo-remove" data-i18n="removePhoto">Remove Photo</button>
       </div>
-      <label><span data-i18n="club">Club</span> <input type="text" id="f-player-club" data-i18n-placeholder="optional" placeholder="(optional)"></label>
-      <label><span data-i18n="playerHand">Dominant Hand</span> <select id="f-player-hand"></select></label>
-      <label><span data-i18n="playerBackhand">Backhand</span> <select id="f-player-backhand"></select></label>
-      <label><span data-i18n="playerGender">Gender</span> <select id="f-player-gender"></select></label>
-      <label><span data-i18n="playerNotes">Notes</span> <textarea id="f-player-notes" rows="2" data-i18n-placeholder="optional" placeholder="(optional)"></textarea></label>
-      <hr>
-      <div class="field-label" data-i18n="externalRankings">External Rankings (enter what you track)</div>
-      <label><span data-i18n="itfRank">ITF Ranking</span> <input type="text" id="f-player-itf-rank" data-i18n-placeholder="optional" placeholder="(optional)"></label>
-      <label><span data-i18n="itfPoints">ITF Points</span> <input type="text" id="f-player-itf-points" data-i18n-placeholder="optional" placeholder="(optional)"></label>
-      <label><span data-i18n="teRank">Tennis Europe Ranking</span> <input type="text" id="f-player-te-rank" data-i18n-placeholder="optional" placeholder="(optional)"></label>
-      <label><span data-i18n="tePoints">Tennis Europe Points</span> <input type="text" id="f-player-te-points" data-i18n-placeholder="optional" placeholder="(optional)"></label>
-      <label><span data-i18n="utrRating">UTR Rating</span> <input type="text" id="f-player-utr" data-i18n-placeholder="optional" placeholder="(optional)"></label>
-      <label><span data-i18n="ikortRank">İ-Kort Ranking</span> <input type="text" id="f-player-ikort-rank" data-i18n-placeholder="optional" placeholder="(optional)"></label>
-      <label><span data-i18n="ikortPoints">İ-Kort Points</span> <input type="text" id="f-player-ikort-points" data-i18n-placeholder="optional" placeholder="(optional)"></label>
+      <details class="form-more" id="player-more-details">
+        <summary data-i18n="moreDetails">More details (optional)</summary>
+        <div class="form-more-body">
+          <label><span data-i18n="club">Club</span> <input type="text" id="f-player-club" data-i18n-placeholder="optional" placeholder="(optional)"></label>
+          <div class="form-pair">
+            <label><span data-i18n="playerHand">Dominant Hand</span> <select id="f-player-hand"></select></label>
+            <label><span data-i18n="playerBackhand">Backhand</span> <select id="f-player-backhand"></select></label>
+          </div>
+          <label><span data-i18n="playerGender">Gender</span> <select id="f-player-gender"></select></label>
+          <label><span data-i18n="playerNotes">Notes</span> <textarea id="f-player-notes" rows="2" data-i18n-placeholder="optional" placeholder="(optional)"></textarea></label>
+        </div>
+      </details>
+      <details class="form-more" id="player-rank-details">
+        <summary data-i18n="externalRankings">External Rankings (enter what you track)</summary>
+        <div class="form-more-body">
+          <div class="form-pair">
+            <label><span data-i18n="itfRank">ITF Ranking</span> <input type="text" id="f-player-itf-rank" data-i18n-placeholder="optional" placeholder="(optional)"></label>
+            <label><span data-i18n="itfPoints">ITF Points</span> <input type="text" id="f-player-itf-points" data-i18n-placeholder="optional" placeholder="(optional)"></label>
+          </div>
+          <div class="form-pair">
+            <label><span data-i18n="teRank">Tennis Europe Ranking</span> <input type="text" id="f-player-te-rank" data-i18n-placeholder="optional" placeholder="(optional)"></label>
+            <label><span data-i18n="tePoints">Tennis Europe Points</span> <input type="text" id="f-player-te-points" data-i18n-placeholder="optional" placeholder="(optional)"></label>
+          </div>
+          <label><span data-i18n="utrRating">UTR Rating</span> <input type="text" id="f-player-utr" data-i18n-placeholder="optional" placeholder="(optional)"></label>
+          <div class="form-pair">
+            <label><span data-i18n="ikortRank">İ-Kort Ranking</span> <input type="text" id="f-player-ikort-rank" data-i18n-placeholder="optional" placeholder="(optional)"></label>
+            <label><span data-i18n="ikortPoints">İ-Kort Points</span> <input type="text" id="f-player-ikort-points" data-i18n-placeholder="optional" placeholder="(optional)"></label>
+          </div>
+        </div>
+      </details>
       <div class="form-actions">
-        <button type="button" id="btn-player-cancel-edit" class="btn btn-ghost hidden" data-i18n="cancel">Cancel</button>
+        <button type="button" id="btn-player-cancel-edit" class="btn btn-ghost" data-i18n="cancel">Cancel</button>
         <button type="submit" class="btn btn-primary" id="btn-player-save" data-i18n="save">Save</button>
       </div>
     </form>
-    <h2 class="section-title" data-i18n="playerList">Players</h2>
+    <input type="search" id="f-player-search" class="search-input hidden" data-i18n-placeholder="searchPlayers" placeholder="Search players" autocomplete="off">
     <div id="player-list" class="match-list"></div>
     <div class="single-action">
       <button type="button" class="btn btn-ghost btn-large" data-nav="home" data-i18n="backToMenu">Back to Menu</button>
@@ -211,22 +236,28 @@
       </div>
     </div>
     <label><span data-i18n="selectPlayer">Select Player</span> <select id="f-player-stats-select"></select></label>
+    <div id="team-board" class="team-board hidden"></div>
     <div id="pstats-filters" class="filter-panel hidden">
-      <div class="filter-group-label" data-i18n="filters">Filters</div>
-      <div class="filter-row">
-        <label><span data-i18n="dateFrom">From</span> <input type="date" id="f-filter-date-from"></label>
-        <label><span data-i18n="dateTo">To</span> <input type="date" id="f-filter-date-to"></label>
-      </div>
-      <div class="filter-group">
-        <div class="filter-group-label" data-i18n="surface">Surface</div>
-        <div class="filter-chips" id="filter-surface-chips"></div>
-      </div>
-      <div class="filter-group">
-        <div class="filter-group-label" data-i18n="tournamentType">Tournament Type</div>
-        <div class="filter-chips" id="filter-type-chips"></div>
-      </div>
-      <button type="button" class="btn btn-ghost btn-sm" id="btn-filters-clear" data-i18n="clearFilters">Clear Filters</button>
+      <button type="button" id="btn-filters-toggle" class="filter-toggle" aria-expanded="false">
+        <span>🎚️ <span data-i18n="filters">Filters</span></span>
+        <span class="filter-toggle-right"><span id="filters-count" class="filter-count hidden"></span><span class="chev">▾</span></span>
+      </button>
       <div class="filter-summary" id="filter-summary"></div>
+      <div id="pstats-filters-body" class="hidden">
+        <div class="filter-row">
+          <label><span data-i18n="dateFrom">From</span> <input type="date" id="f-filter-date-from"></label>
+          <label><span data-i18n="dateTo">To</span> <input type="date" id="f-filter-date-to"></label>
+        </div>
+        <div class="filter-group">
+          <div class="filter-group-label" data-i18n="surface">Surface</div>
+          <div class="filter-chips" id="filter-surface-chips"></div>
+        </div>
+        <div class="filter-group">
+          <div class="filter-group-label" data-i18n="tournamentType">Tournament Type</div>
+          <div class="filter-chips" id="filter-type-chips"></div>
+        </div>
+        <button type="button" class="btn btn-ghost btn-sm" id="btn-filters-clear" data-i18n="clearFilters">Clear Filters</button>
+      </div>
     </div>
     <div id="player-stats-ai-wrap" class="hidden"></div>
     <div id="player-stats-content"></div>
@@ -239,20 +270,12 @@
   <section id="view-setup" class="view hidden">
     <h2 class="section-title" id="setup-title" data-i18n="newMatch">New Match</h2>
     <form id="form-setup" class="form">
-      <label><span data-i18n="tournamentName">Tournament Name</span> <input type="text" id="f-tournament" data-i18n-placeholder="optional" placeholder="(optional)"></label>
-      <label><span data-i18n="tournamentType">Tournament Type</span> <select id="f-tournament-type"></select></label>
-      <label><span data-i18n="round">Round</span> <input type="text" id="f-round" data-i18n-placeholder="optional" placeholder="(optional)"></label>
-      <label><span data-i18n="club">Club</span> <input type="text" id="f-club" data-i18n-placeholder="optional" placeholder="(optional)"></label>
-      <label><span data-i18n="surface">Surface</span> <select id="f-surface"></select></label>
-      <label><span data-i18n="city">City</span> <input type="text" id="f-city" data-i18n-placeholder="optional" placeholder="(optional)"></label>
-      <label><span data-i18n="coach">Coach</span> <input type="text" id="f-coach" data-i18n-placeholder="optional" placeholder="(optional)"></label>
-      <hr>
-      <label><span data-i18n="player1">Player 1</span> <select id="f-player1" required></select></label>
+      <label class="req"><span data-i18n="player1">Player 1</span> <select id="f-player1" required></select></label>
       <div class="quickadd-row hidden" id="f-player1-quickadd">
         <input type="text" id="f-player1-newname" data-i18n-placeholder="playerFullName" placeholder="Full name">
         <button type="button" class="btn btn-sm btn-primary" id="f-player1-quickadd-save" data-i18n="add">Add</button>
       </div>
-      <label><span data-i18n="player2">Player 2</span> <select id="f-player2" required></select></label>
+      <label class="req"><span data-i18n="player2">Player 2</span> <select id="f-player2" required></select></label>
       <div class="quickadd-row hidden" id="f-player2-quickadd">
         <input type="text" id="f-player2-newname" data-i18n-placeholder="playerFullName" placeholder="Full name">
         <button type="button" class="btn btn-sm btn-primary" id="f-player2-quickadd-save" data-i18n="add">Add</button>
@@ -271,6 +294,24 @@
       <label><span data-i18n="startingServer">Starting Server</span>
         <select id="f-server"></select>
       </label>
+      <details class="form-more" id="setup-more-details">
+        <summary data-i18n="matchDetails">Match details (optional)</summary>
+        <div class="form-more-body">
+          <label><span data-i18n="tournamentName">Tournament Name</span> <input type="text" id="f-tournament" data-i18n-placeholder="optional" placeholder="(optional)"></label>
+          <div class="form-pair">
+            <label><span data-i18n="tournamentType">Tournament Type</span> <select id="f-tournament-type"></select></label>
+            <label><span data-i18n="round">Round</span> <input type="text" id="f-round" data-i18n-placeholder="optional" placeholder="(optional)"></label>
+          </div>
+          <div class="form-pair">
+            <label><span data-i18n="surface">Surface</span> <select id="f-surface"></select></label>
+            <label><span data-i18n="city">City</span> <input type="text" id="f-city" data-i18n-placeholder="optional" placeholder="(optional)"></label>
+          </div>
+          <div class="form-pair">
+            <label><span data-i18n="club">Club</span> <input type="text" id="f-club" data-i18n-placeholder="optional" placeholder="(optional)"></label>
+            <label><span data-i18n="coach">Coach</span> <input type="text" id="f-coach" data-i18n-placeholder="optional" placeholder="(optional)"></label>
+          </div>
+        </div>
+      </details>
       <div class="form-actions">
         <button type="button" id="btn-cancel-setup" class="btn btn-ghost" data-i18n="cancel">Cancel</button>
         <button type="submit" class="btn btn-primary" data-i18n="startMatch">Start Match</button>
@@ -412,15 +453,16 @@
 
 </main>
 
-<script src="js/i18n.js?v=26"></script>
-<script src="js/scoring.js?v=26"></script>
-<script src="js/storage.js?v=26"></script>
-<script src="js/court.js?v=26"></script>
-<script src="js/export.js?v=26"></script>
-<script src="js/ai-review.js?v=26"></script>
-<script src="js/live-share.js?v=26"></script>
-<script src="js/qrcode.js?v=26"></script>
-<script src="js/app.js?v=26"></script>
+<script src="js/i18n.js?v=27"></script>
+<script src="js/scoring.js?v=27"></script>
+<script src="js/storage.js?v=27"></script>
+<script src="js/court.js?v=27"></script>
+<script src="js/export.js?v=27"></script>
+<script src="js/ai-review.js?v=27"></script>
+<script src="js/live-share.js?v=27"></script>
+<script src="js/qrcode.js?v=27"></script>
+<script src="js/insights.js?v=27"></script>
+<script src="js/app.js?v=27"></script>
 <script>
   if ("serviceWorker" in navigator) {
     // When a new version takes over, reload once so it shows immediately - but only from the home

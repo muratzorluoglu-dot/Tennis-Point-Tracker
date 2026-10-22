@@ -170,7 +170,6 @@ button, input, select, textarea { font-family: inherit; color: inherit; }
 
 /* Player Stats filter panel (dark screen) */
 .filter-panel { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 16px; padding: 14px; margin: 12px 0; }
-.filter-panel .filter-group-label:first-child { font-size: 0.85rem; font-weight: 700; color: white; margin-bottom: 10px; }
 .filter-row { display: flex; gap: 8px; margin-bottom: 10px; }
 .filter-row label { flex: 1; display: flex; flex-direction: column; gap: 4px; font-size: 0.72rem; color: rgba(255,255,255,0.55); }
 .filter-row input[type="date"] { padding: 9px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.06); color: white; font-size: 0.82rem; }
@@ -483,6 +482,126 @@ tbody tr:nth-child(even) { background: color-mix(in srgb, var(--surface-2) 55%, 
 thead { background: var(--surface-2); position: sticky; top: 0; }
 th { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); }
 
+/* ============ UX pass: forms, home, roster, team board, badges ============ */
+.form label.req > span:first-child::after { content: " *"; color: var(--red); font-weight: 800; }
+.form-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.form-pair > label { min-width: 0; }
+.form-pair input, .form-pair select { width: 100%; min-width: 0; }
+.form-title { margin: 0 0 2px; font-size: 1.05rem; font-weight: 800; }
+.form-more { border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+.form-more summary { padding: 11px 13px; font-size: 0.82rem; font-weight: 750; color: var(--text-muted); cursor: pointer; list-style: none; background: var(--surface-2); display: flex; justify-content: space-between; align-items: center; }
+.form-more summary::-webkit-details-marker { display: none; }
+.form-more summary::after { content: "+"; font-size: 1.1rem; color: var(--brand); font-weight: 800; }
+.form-more[open] summary::after { content: "\2013"; }
+.form-more-body { display: flex; flex-direction: column; gap: 12px; padding: 12px; }
+.view-head { margin-top: 4px; margin-bottom: 10px; }
+.search-input {
+  width: 100%; padding: 11px 14px; margin-bottom: 10px; border: 1.5px solid var(--border); border-radius: 999px;
+  background: var(--card-bg); color: var(--text); font-size: 0.95rem;
+}
+.search-input:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 25%, transparent); }
+
+.toast {
+  position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 20px);
+  background: var(--brand-dark); color: #fff; padding: 11px 18px; border-radius: 999px; font-size: 0.85rem; font-weight: 700;
+  box-shadow: 0 12px 28px -10px rgba(0, 0, 0, 0.5); opacity: 0; pointer-events: none; z-index: 70; transition: opacity 0.2s, transform 0.2s;
+}
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* Home: continue card + richer match rows */
+.continue-card {
+  display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; cursor: pointer; margin-bottom: 12px;
+  padding: 14px 16px; border: none; border-radius: var(--radius); color: #fff;
+  background: linear-gradient(150deg, #0e6b45, #08402b); box-shadow: 0 14px 28px -16px var(--brand);
+}
+.continue-card:active { transform: scale(0.985); }
+.continue-live { display: inline-flex; align-items: center; gap: 6px; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ball); }
+.continue-live::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--ball); animation: watch-pulse 1.6s ease-in-out infinite; }
+.continue-body { flex: 1; min-width: 0; }
+.continue-names { font-size: 1rem; font-weight: 800; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.continue-score { font-size: 0.82rem; opacity: 0.85; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.continue-go { flex: 0 0 auto; background: var(--ball); color: var(--ball-ink); font-weight: 800; font-size: 0.82rem; padding: 9px 14px; border-radius: 999px; }
+.match-item-main { flex: 1; min-width: 0; }
+.match-score { font-size: 0.86rem; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--text); margin-top: 3px; }
+.chip { display: inline-flex; align-items: center; gap: 5px; font-size: 0.66rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; margin-left: 6px; vertical-align: middle; }
+.chip-live { background: color-mix(in srgb, var(--forced) 18%, transparent); color: var(--forced); }
+.chip-done { background: color-mix(in srgb, var(--brand) 16%, transparent); color: var(--brand); }
+.match-item .winner-name { color: var(--brand); }
+.icon-btn { width: 36px; height: 36px; border: none; border-radius: 11px; background: var(--surface-2); font-size: 0.95rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+.icon-btn:active { transform: scale(0.94); }
+.empty-card { text-align: center; padding: 22px 16px; border: 1.5px dashed var(--border); border-radius: var(--radius); color: var(--text-muted); font-size: 0.9rem; line-height: 1.5; }
+.empty-card .empty-icon { font-size: 2rem; display: block; margin-bottom: 6px; }
+
+/* Roster cards */
+.player-avatar-wrap { position: relative; flex: 0 0 auto; }
+.player-avatar-flagbadge { position: absolute; right: -4px; bottom: -4px; font-size: 0.8rem; background: var(--card-bg); border-radius: 50%; line-height: 1; padding: 1px; }
+.player-initials { background: linear-gradient(150deg, var(--brand), var(--brand-dark)); color: #fff; font-weight: 800; font-size: 1rem; border: none; }
+.player-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
+.pchip { font-size: 0.68rem; font-weight: 750; padding: 2px 8px; border-radius: 999px; background: var(--surface-2); color: var(--text-muted); }
+.pchip.good { background: color-mix(in srgb, var(--brand) 16%, transparent); color: var(--brand); }
+
+/* Form dots (last results) */
+.form-dots { display: inline-flex; gap: 4px; align-items: center; }
+.form-dots .fd { width: 9px; height: 9px; border-radius: 50%; background: #566a5e; }
+.form-dots .fd.w { background: #3ddc84; }
+.form-dots .fd.l { background: #ff6b6b; }
+.player-card-form .form-dots .fd { background: var(--border); }
+.player-card-form .form-dots .fd.w { background: var(--win); }
+.player-card-form .form-dots .fd.l { background: var(--ue); }
+
+/* Team board (Player Stats landing) */
+.team-board { margin-top: 6px; }
+.team-board-head { color: rgba(255,255,255,0.65); font-size: 0.8rem; margin: 2px 2px 10px; }
+.sort-chips { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 8px; margin: 0 -2px 6px; scrollbar-width: none; }
+.sort-chips::-webkit-scrollbar { display: none; }
+.sort-chip { flex: 0 0 auto; padding: 7px 13px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.22); background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.8); font-size: 0.76rem; font-weight: 700; cursor: pointer; }
+.sort-chip.active { background: var(--ball); color: var(--ball-ink); border-color: var(--ball); }
+.team-row { display: flex; align-items: center; gap: 11px; width: 100%; text-align: left; padding: 11px 12px; margin-bottom: 8px; border: 1px solid rgba(255,255,255,0.12); border-radius: 16px; background: rgba(255,255,255,0.06); color: #fff; cursor: pointer; }
+.team-row:active { transform: scale(0.985); }
+.team-rank { flex: 0 0 26px; text-align: center; font-weight: 900; font-size: 1rem; color: rgba(255,255,255,0.5); }
+.team-row:nth-child(1) .team-rank, .team-row.rank-1 .team-rank { color: var(--ball); }
+.team-row .player-avatar { width: 42px; height: 42px; background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.15); }
+.team-row .player-initials { background: linear-gradient(150deg, #17935f, #0d6642); }
+.team-info { flex: 1; min-width: 0; }
+.team-name { font-weight: 800; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.team-sub { font-size: 0.72rem; color: rgba(255,255,255,0.6); margin-top: 3px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.team-metric { flex: 0 0 auto; text-align: right; }
+.team-metric-num { font-size: 1.3rem; font-weight: 900; color: var(--ball); font-variant-numeric: tabular-nums; line-height: 1.1; }
+.team-metric-label { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.05em; color: rgba(255,255,255,0.5); }
+.team-note { color: rgba(255,255,255,0.5); font-size: 0.78rem; margin-top: 6px; }
+
+/* Player hero + badges (Player Stats) */
+.player-hero { display: flex; align-items: center; gap: 14px; padding: 4px 2px 14px; }
+.player-hero .player-avatar { width: 64px; height: 64px; background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.18); font-size: 1.5rem; }
+.player-hero .player-initials { background: linear-gradient(150deg, #17935f, #0d6642); font-size: 1.4rem; }
+.hero-name { font-size: 1.25rem; font-weight: 900; color: #fff; line-height: 1.15; }
+.hero-meta { font-size: 0.78rem; color: rgba(255,255,255,0.65); margin-top: 3px; }
+.hero-record { display: flex; align-items: center; gap: 10px; margin-top: 8px; font-size: 0.82rem; color: #fff; font-weight: 800; }
+.hero-record .pill { background: var(--ball); color: var(--ball-ink); padding: 2px 10px; border-radius: 999px; font-size: 0.74rem; }
+.back-to-team { border: none; background: rgba(255,255,255,0.08); color: #fff; padding: 7px 13px; border-radius: 999px; font-size: 0.78rem; font-weight: 700; cursor: pointer; margin-bottom: 8px; }
+.badges-section { margin-bottom: 16px; }
+.badges-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+.badges-head h3 { margin: 0; font-size: 1rem; color: #fff; }
+.badges-head span { font-size: 0.74rem; color: rgba(255,255,255,0.6); }
+.badges-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.badge { text-align: center; padding: 11px 6px 10px; border-radius: 14px; background: rgba(215, 243, 74, 0.1); border: 1px solid rgba(215, 243, 74, 0.35); color: #fff; }
+.badge .b-icon { font-size: 1.6rem; line-height: 1; display: block; }
+.badge .b-name { font-size: 0.72rem; font-weight: 800; margin-top: 5px; line-height: 1.2; }
+.badge .b-desc { font-size: 0.62rem; color: rgba(255,255,255,0.6); margin-top: 3px; line-height: 1.25; }
+.badge.locked { background: rgba(255,255,255,0.04); border: 1px dashed rgba(255,255,255,0.18); }
+.badge.locked .b-icon { filter: grayscale(1); opacity: 0.4; }
+.badge.locked .b-name { color: rgba(255,255,255,0.7); }
+.badge .b-progress { display: inline-block; margin-top: 5px; font-size: 0.62rem; font-weight: 800; padding: 1px 7px; border-radius: 999px; background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.8); font-variant-numeric: tabular-nums; }
+
+/* Collapsible filters (Player Stats) */
+.filter-toggle { width: 100%; display: flex; justify-content: space-between; align-items: center; border: none; background: transparent; color: #fff; font-size: 0.88rem; font-weight: 800; padding: 2px 0; cursor: pointer; }
+.filter-toggle-right { display: inline-flex; align-items: center; gap: 8px; }
+.filter-toggle .chev { transition: transform 0.2s; }
+.filter-toggle[aria-expanded="true"] .chev { transform: rotate(180deg); }
+.filter-count { background: var(--ball); color: var(--ball-ink); font-size: 0.7rem; font-weight: 900; padding: 1px 8px; border-radius: 999px; }
+.filter-panel .filter-summary { margin: 4px 0 0; }
+#pstats-filters-body { margin-top: 12px; }
+
 /* Summary / Player Stats - şık koyu tema */
 #view-summary, #view-player-stats {
   background: linear-gradient(165deg, #061510 0%, #0b231a 50%, #0f2e22 100%);
@@ -669,6 +788,8 @@ th { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.04em; colo
   body.printing-summary .single-action,
   body.printing-summary #ai-review-wrap, body.printing-summary #player-stats-ai-wrap,
   body.printing-summary #view-player-stats > label { display: none !important; }
+  body.printing-summary .team-board, body.printing-summary .badges-section, body.printing-summary .player-hero,
+  body.printing-summary .back-to-team, body.printing-summary #pstats-filters { display: none !important; }
   body.printing-log .table-scroll { overflow: visible !important; }
   body.printing-log table { font-size: 10px; }
 
